@@ -240,6 +240,12 @@
           "path": {
             "type": "string"
           },
+          "also_at": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "router": {
             "type": "string"
           },
