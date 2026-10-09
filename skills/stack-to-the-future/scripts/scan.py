@@ -329,7 +329,7 @@ def scan(root: str | Path, cache_dir: Path | None = None) -> dict:
                    if (c["enum_file"], c["enum"]) == (m["file"], m["enum"])]
         if columns:
             m["columns"] = columns
-    incomplete = [{"file": p, **i} for p, f in facts.items() for i in f["incomplete"]]
+    incomplete = [{"file": p, **i} for p, f in facts.items() for i in f["incomplete"]] + extra["incomplete"]
     for m in machines:
         for state in m["missing"]:
             member = project.symbols[m["file"]][f"{m['enum']}.{state}"]

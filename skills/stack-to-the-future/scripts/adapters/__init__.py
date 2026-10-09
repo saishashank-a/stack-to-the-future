@@ -2,7 +2,7 @@
 import importlib
 import pkgutil
 
-KEYS = ("calls", "entry_points", "permission_branches", "status_columns")
+KEYS = ("calls", "entry_points", "permission_branches", "status_columns", "incomplete")
 
 
 def load() -> list:

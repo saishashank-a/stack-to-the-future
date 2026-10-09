@@ -34,6 +34,7 @@ def test_nextjs_app_router_fixture():
         ("api_route", "POST /api/orders", "app/api/orders/route.ts"),
         ("event_handler", "server action placeOrder", "app/actions.ts"),
         ("event_handler", "server action cancelOrder", "app/actions.ts"),
+        ("event_handler", "server action refundOrder", "app/actions.ts"),
     }  # app/_drafts/page.tsx is private: no route
     post = next(e for e in result["entry_points"] if e["label"] == "POST /api/orders")
     assert (post["symbol"], post["start_line"], post["end_line"]) == ("POST", 7, 11)
@@ -206,3 +207,26 @@ def test_fastapi_router_mounted_twice_keeps_every_mount(tmp_path):
     ep = next(e for e in result["entry_points"] if e["symbol"] == "list_items")
     assert (ep["label"], ep["path"], ep["also_at"]) == ("GET /v1/items/", "/v1/items/", ["/v2/items/"])
     assert ("list_items", "Depends(require_admin)") in {(b["function"], b["test"]) for b in result["permission_branches"]}
+
+
+def test_nextjs_flags_incomplete_typescript():
+    result = scan(ROOT / "fixtures" / "nextjs-app")
+    assert {(i["file"], i["kind"], i["line"], i["symbol"]) for i in result["incomplete"]} == {
+        ("app/actions.ts", "todo", 9, "cancelOrder"),
+        ("app/actions.ts", "not_implemented", 14, "refundOrder"),
+        ("app/(shop)/products/page.tsx", "stub", 18, "recommend"),
+    }
+
+
+def test_nextjs_anonymous_callbacks_and_constructors_are_not_stubs(tmp_path):
+    result = repo(tmp_path, {
+        "package.json": '{"dependencies": {"next": "15.0.0"}}',
+        "app/page.tsx": (
+            "export default function Home() {\n"
+            "  const noop = () => {};\n"
+            "  return <button onClick={() => {}}>x</button>;\n"
+            "}\n"
+            "class Cart {\n  constructor() {}\n}\n"
+        ),
+    })
+    assert [(i["kind"], i["symbol"]) for i in result["incomplete"]] == [("stub", "noop")]
