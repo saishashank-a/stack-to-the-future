@@ -12,8 +12,8 @@ from cluster import cluster
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "leave-desk"
-GOLDEN = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text())
-SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text())
+GOLDEN = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text(encoding="utf-8"))
+SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")
@@ -142,6 +142,6 @@ def test_cli_writes_atlas_folder(tmp_path):
     repo = tmp_path / "leave-desk"
     shutil.copytree(FIXTURE, repo, ignore=shutil.ignore_patterns(".atlas"))
     atlas.main(["scan", str(repo), "--draft-limit", "1"])
-    out = json.loads((repo / ".atlas" / "scan.json").read_text())
+    out = json.loads((repo / ".atlas" / "scan.json").read_text(encoding="utf-8"))
     assert out["clusters"]["draft_now"] == ["leave"]
-    assert "scan.json" in (repo / ".atlas" / ".gitignore").read_text()
+    assert "scan.json" in (repo / ".atlas" / ".gitignore").read_text(encoding="utf-8")

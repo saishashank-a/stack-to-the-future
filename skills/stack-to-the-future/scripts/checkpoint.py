@@ -143,7 +143,7 @@ def outline(atlas: dict) -> str:
     for title, items in sections:
         if items:
             lines += ["", f"{title}:", *(f"  - {i}" for i in items)]
-    return Template(OUTLINE.read_text()).substitute(project=atlas["project"]["name"], outline="\n".join(lines).strip("\n"))
+    return Template(OUTLINE.read_text(encoding="utf-8")).substitute(project=atlas["project"]["name"], outline="\n".join(lines).strip("\n"))
 
 
 def ordered(workflow: dict) -> list[dict]:

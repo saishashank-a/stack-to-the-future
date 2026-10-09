@@ -13,7 +13,7 @@ import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_PATH = ROOT / "examples" / "leave-desk.atlas.json"
-GOLDEN = json.loads(GOLDEN_PATH.read_text())
+GOLDEN = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
 
 
 @pytest.fixture
@@ -27,12 +27,12 @@ def repo(tmp_path):
 
 
 def read(repo, name):
-    return json.loads((repo / ".atlas" / name).read_text())
+    return json.loads((repo / ".atlas" / name).read_text(encoding="utf-8"))
 
 
 def write(repo, name, doc):
     path = repo / ".atlas" / name
-    path.write_text(json.dumps(doc))
+    path.write_text(json.dumps(doc), encoding="utf-8")
     return str(path)
 
 
@@ -48,7 +48,7 @@ def test_cache_reused_for_every_python_file(repo, monkeypatch):
 
 def test_edit_marks_only_what_cites_the_file(repo, capsys):
     balance = repo / "app" / "leave" / "balance.py"
-    balance.write_text(balance.read_text() + "\n# reviewed\n")
+    balance.write_text(balance.read_text() + "\n# reviewed\n", encoding="utf-8")
     atlas.main(["scan", str(repo)])
     redraft, review = checkpoint.stale(read(repo, "atlas.json"), read(repo, "scan.json"))
     assert [i.split(":")[0] for i in redraft] == [

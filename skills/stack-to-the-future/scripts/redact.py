@@ -55,7 +55,7 @@ def read_redacted(root: Path, path: str) -> list[str]:
         raise ValueError(f"{path} is not a file inside {root}")
     if is_secret_file(path):
         raise ValueError(f"{path} is a secrets file; it is never read.")
-    return redact(target.read_text(errors="replace"))[0].splitlines()
+    return redact(target.read_text(errors="replace", encoding="utf-8"))[0].splitlines()
 
 
 def redact_obj(obj):

@@ -15,9 +15,9 @@ import atlas as cli
 from render import excalidraw, html, lal, layout
 
 ROOT = Path(__file__).resolve().parents[1]
-ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text())
+ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text(encoding="utf-8"))
 GOLDEN = ROOT / "examples" / "out"
-LAL_SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "lal.schema.json").read_text())
+LAL_SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "lal.schema.json").read_text(encoding="utf-8"))
 RENDERERS = {"html": html.render, "excalidraw": excalidraw.render, "lal": lal.render}
 CANCEL = "request-time-off/employee-cancels"
 
@@ -32,8 +32,8 @@ def test_golden(out, fmt):
     path = GOLDEN / f"leave-desk.atlas.{fmt}"
     if os.environ.get("UPDATE_GOLDEN"):
         path.parent.mkdir(exist_ok=True)
-        path.write_text(out[fmt])
-    assert out[fmt] == path.read_text(), f"{path.name} changed; rerun with UPDATE_GOLDEN=1 if intended"
+        path.write_text(out[fmt], encoding="utf-8")
+    assert out[fmt] == path.read_text(encoding="utf-8"), f"{path.name} changed; rerun with UPDATE_GOLDEN=1 if intended"
     assert out[fmt] == RENDERERS[fmt](ATLAS)  # deterministic
 
 
@@ -125,7 +125,7 @@ def test_planted_secret_refuses_to_render(fmt):
 
 def test_cli_render(tmp_path):
     (tmp_path / ".atlas").mkdir()
-    (tmp_path / ".atlas" / "atlas.json").write_text(json.dumps(ATLAS))
+    (tmp_path / ".atlas" / "atlas.json").write_text(json.dumps(ATLAS), encoding="utf-8")
     cli.main(["render", "--root", str(tmp_path)])
     assert {p.name for p in (tmp_path / ".atlas" / "out").iterdir()} == {"atlas.html", "atlas.excalidraw", "atlas.lal"}
 
@@ -133,7 +133,7 @@ def test_cli_render(tmp_path):
     leaky["project"]["summary"] = "token = 'ghp_" + "a1" * 18 + "'"
     other = tmp_path / "leaky"
     (other / ".atlas").mkdir(parents=True)
-    (other / ".atlas" / "atlas.json").write_text(json.dumps(leaky))
+    (other / ".atlas" / "atlas.json").write_text(json.dumps(leaky), encoding="utf-8")
     with pytest.raises(ValueError):
         cli.main(["render", "--root", str(other), "--format", "excalidraw,html"])
     assert not (other / ".atlas" / "out" / "atlas.excalidraw").exists()

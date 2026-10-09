@@ -8,7 +8,7 @@ from validate import report, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "leave-desk"
-ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text())
+ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text(encoding="utf-8"))
 
 
 def test_passes_the_validator():

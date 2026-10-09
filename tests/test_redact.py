@@ -43,13 +43,13 @@ def test_secret_files():
 
 
 def test_scan_output_is_redacted(tmp_path):
-    (tmp_path / ".env").write_text("STRIPE=" + TOKENS["stripe_key"] + "\n")
+    (tmp_path / ".env").write_text("STRIPE=" + TOKENS["stripe_key"] + "\n", encoding="utf-8")
     (tmp_path / "app.py").write_text(
         f"# TODO: rotate {TOKENS['github_token']}\n"
         f"def check(user, api_key):\n"
         f"    if user.role == 'admin' and api_key == '{TOKENS['aws_key']}':\n"
         f"        return True\n"
-    )
+    , encoding="utf-8")
     result = scan(tmp_path)
     text = str(result)
     assert all(t not in text for t in TOKENS.values())

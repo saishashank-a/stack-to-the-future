@@ -15,9 +15,9 @@ def context(root: Path, path: str) -> str:
     """Everything known about one file, as plain text for Claude: card, stages, symbols, links, facts, redacted source."""
     root = Path(root).resolve()
     lines = read_redacted(root, path)  # refuses secrets files and paths outside the repo before anything else
-    scan = json.loads((root / ".atlas" / "scan.json").read_text())
+    scan = json.loads((root / ".atlas" / "scan.json").read_text(encoding="utf-8"))
     atlas_path = root / ".atlas" / "atlas.json"
-    atlas = json.loads(atlas_path.read_text()) if atlas_path.exists() else None
+    atlas = json.loads(atlas_path.read_text(encoding="utf-8")) if atlas_path.exists() else None
     out = [f"# Walkthrough context: {path}", ""]
 
     out.append("## Card")

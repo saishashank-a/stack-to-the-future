@@ -10,8 +10,8 @@ from validate import banned_words, report, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 SCAN = scan(ROOT / "fixtures" / "leave-desk")
-GOLDEN = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text())
-DRAFT = json.loads((ROOT / "tests" / "data" / "leave-desk.claude-draft.json").read_text())
+GOLDEN = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text(encoding="utf-8"))
+DRAFT = json.loads((ROOT / "tests" / "data" / "leave-desk.claude-draft.json").read_text(encoding="utf-8"))
 
 
 def test_claude_draft_is_valid():
