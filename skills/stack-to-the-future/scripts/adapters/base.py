@@ -1,0 +1,19 @@
+"""The adapter contract (PLAN section 7). Facts use the scan.json shapes."""
+from typing import Protocol
+
+
+class Adapter(Protocol):
+    name: str
+
+    def applies(self, project) -> bool:
+        """Cheap check, e.g. the framework is imported anywhere in the repo."""
+
+    def extract(self, project) -> dict:
+        """Return any of:
+        calls: [{file, caller, line, target_file, target_symbol}]  extra resolved call edges
+        entry_points: [scan entry point]                           new entry points (deduped by id)
+        relabel: {entry_point_id: {label, path}}                   fix labels in place
+        permission_branches: [{file, function, line, test}]
+        status_columns: [{file, model, field, line, enum_file, enum}]
+        hints: {path: {hint, group}}                               override a file's layer hint
+        """

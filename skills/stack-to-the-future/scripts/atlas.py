@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["tree-sitter>=0.25,<0.26", "tree-sitter-python>=0.25", "networkx>=3.3"]
+# dependencies = ["tree-sitter>=0.25,<0.26", "tree-sitter-python>=0.25", "tree-sitter-typescript>=0.23.2", "networkx>=3.3"]
 # ///
 # ponytail: tree-sitter 0.26.0 segfaults walking some real files (repro: full-stack-fastapi-template
 # backend/tests/api/routes/test_users.py); 0.25.2 is fine. Lift the cap once a fixed 0.26.x is out.

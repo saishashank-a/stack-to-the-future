@@ -13,6 +13,7 @@ dev = [
     "tree-sitter>=0.25,<0.26",
     "tree-sitter-python>=0.25.0",
     "networkx>=3.6.1",
+    "tree-sitter-typescript>=0.23.2",
 ]
 
 [tool.pytest.ini_options]
