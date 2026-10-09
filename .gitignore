@@ -223,3 +223,5 @@ __marimo__/
 # Stack to the Future outputs
 .atlas/cache/
 fixtures/**/.atlas/
+.claude/worktrees/
+.playwright-mcp/

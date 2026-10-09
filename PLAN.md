@@ -137,6 +137,8 @@ The schema lives in [`skills/stack-to-the-future/schema/atlas.schema.json`](skil
 6. Each workflow has one `start`, at least one `end`, and no orphan stages; violations become `dead_end` / `unreachable` flags rather than silent drops.
 7. Stage names pass the plain-language lint (`references/plain-language.md`): no file names, no code identifiers, no banned jargon (`endpoint`, `ORM`, `handler`, ...). Identifiers belong in `stageFile.label` only.
 8. Redaction pass is clean (section 6).
+9. Each card's `stages` equals the set of stages whose `files` list that file (added in (c)).
+10. `files[]` matches `scan.json` paths and hashes; ids are unique (added in (c)).
 
 ---
 
@@ -292,3 +294,6 @@ Adapters stay in (f) as listed. Consequence: the (b) scanner is framework-agnost
 - **(b) Workflow skeletons group entry points by file, reachability and shared status machines,** not by shared helper code; shared CRUD/dependency helpers otherwise chain every route into one skeleton on real repos.
 - **(b) Module rule on monorepos.** With `backend/` + `frontend/` at the top, each becomes one module, as decided. On the FastAPI template that makes `backend` one module with six workflow skeletons (items, login, users, ...), which the checkpoint can split.
 - **(b) SQLModel** classes count as data tables only with `table=True`; the rest are request/response shapes.
+- **(c) Validator line bound is `end_line <= loc + 1`** because the scan stores newline counts. Follow-up: scan stores an exact `lines` count per file, then drop the `+1`.
+- **(c) "Never edit locked items" is enforced only by instructions** until `merge` (milestone d) can compare against the previous `atlas.json`.
+- **(c) The exit-check draft passed in one round, but was written by the same context that wrote the golden atlas,** so it does not prove the instructions work blind. A fresh-context draft is the real test.
