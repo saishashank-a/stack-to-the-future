@@ -9,3 +9,7 @@ export async function cancelOrder(orderId: string) {
   // TODO: cancelling is not built yet
   throw new Error(`cannot cancel ${orderId}`);
 }
+
+export async function refundOrder(orderId: string) {
+  throw new Error("Not implemented");
+}

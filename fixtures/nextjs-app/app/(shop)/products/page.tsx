@@ -14,3 +14,7 @@ export default function Products() {
     </ul>
   );
 }
+
+function recommend(productId: string) {
+  // picks related products; never written
+}

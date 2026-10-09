@@ -1,13 +1,17 @@
 """Next.js App Router: pages, route handlers, layouts and server actions. The only place TypeScript is parsed in v1."""
 import json
+import re
 
 import tree_sitter_typescript
 from tree_sitter import Language, Parser
+
+from scan import TODO_RX
 
 TSX = Parser(Language(tree_sitter_typescript.language_tsx()))
 TS = Parser(Language(tree_sitter_typescript.language_typescript()))
 SOURCE_EXTS = (".tsx", ".ts", ".jsx", ".js")
 METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS")
+NOT_IMPLEMENTED_RX = re.compile(r"not\s*(yet\s*)?implemented", re.I)
 
 
 def text(n) -> str:
@@ -71,6 +75,46 @@ def use_server(program) -> bool:
     return first is not None and first.type == "expression_statement" and text(first).strip("'\"; ") == "use server"
 
 
+FUNCTIONS = ("function_declaration", "generator_function_declaration", "method_definition", "arrow_function",
+             "function_expression")
+
+
+def owner(n) -> str | None:
+    """Name of the function holding this node: its declaration name, the variable it's assigned to, or 'default'."""
+    while n is not None:
+        if n.type in FUNCTIONS:
+            name = n.child_by_field_name("name")
+            if name is None and n.parent is not None and n.parent.type == "variable_declarator":
+                name = n.parent.child_by_field_name("name")
+            if name is not None:
+                return text(name)
+            if n.parent is not None and n.parent.type == "export_statement":
+                return "default"
+        n = n.parent
+    return None
+
+
+def incomplete(program) -> list[dict]:
+    """TODO/FIXME comments, `throw new Error("not implemented")`, and named functions whose body is empty.
+    Anonymous empty callbacks (`() => {}`) are deliberate no-ops, so they don't count."""
+    out, todo = [], [program]
+    while todo:
+        n = todo.pop()
+        todo.extend(n.children)
+        start, end = n.start_point.row + 1, n.end_point.row + 1
+        if n.type == "comment" and TODO_RX.search(text(n)):
+            out.append({"kind": "todo", "line": start, "end_line": start, "symbol": owner(n),
+                        "text": text(n).strip("/* \n").strip()})
+        elif n.type == "throw_statement" and NOT_IMPLEMENTED_RX.search(text(n)):
+            out.append({"kind": "not_implemented", "line": start, "end_line": end, "symbol": owner(n)})
+        elif n.type in FUNCTIONS and (body := n.child_by_field_name("body")) is not None \
+                and body.type == "statement_block" and all(c.type == "comment" for c in body.named_children):
+            name = owner(n)
+            if name and name != "constructor" and owner(n.parent) != name:
+                out.append({"kind": "stub", "line": start, "end_line": end, "symbol": name})
+    return sorted(out, key=lambda i: (i["line"], i["kind"]))
+
+
 class NextJSAdapter:
     name = "nextjs"
 
@@ -78,7 +122,7 @@ class NextJSAdapter:
         return bool(next_roots(project))
 
     def extract(self, project) -> dict:
-        facts = {"entry_points": [], "hints": {}}
+        facts, flagged = {"entry_points": [], "hints": {}, "incomplete": []}, set()
 
         def add(kind, label, file, symbol, lines, **extra):
             facts["entry_points"].append({"kind": kind, "label": label, **extra, "file": file, "symbol": symbol,
@@ -107,6 +151,9 @@ class NextJSAdapter:
                 if use_server(program):
                     for name, lines in sorted(exports(program).items()):
                         add("event_handler", f"server action {name}", path, name, lines)
+                if path not in flagged:  # nested Next roots would otherwise flag a file twice
+                    flagged.add(path)
+                    facts["incomplete"] += [{"file": path, **i} for i in incomplete(program)]
         return facts
 
 
