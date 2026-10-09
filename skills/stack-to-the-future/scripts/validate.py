@@ -51,20 +51,8 @@ def validate(atlas: dict, scan: dict) -> list[dict]:
 
     # Rules 1 + 2: every citation points at real lines, and a cited symbol exists there.
     for where, ev in evidence(atlas):
-        f = scan_files.get(ev["path"])
-        if f is None:
-            err(where, "evidence", f"{ev['path']} is not a scanned file")
-            continue
-        # ponytail: scan stores newline count; +1 allows a last line without a trailing newline
-        if not ev["start_line"] <= ev["end_line"] <= f["loc"] + 1:
-            err(where, "evidence", f"lines {ev['start_line']}-{ev['end_line']} are outside {ev['path']} ({f['loc']} lines)")
-        if "symbol" in ev:
-            sym = symbols.get((ev["path"], ev["symbol"]))
-            if sym is None:
-                err(where, "symbol", f"{ev['symbol']} is not defined in {ev['path']}")
-            elif not (ev["start_line"] <= sym["end_line"] and sym["start_line"] <= ev["end_line"]):
-                err(where, "symbol", f"{ev['symbol']} is at lines {sym['start_line']}-{sym['end_line']}, "
-                                     f"not {ev['start_line']}-{ev['end_line']}")
+        for rule, message in check_citation(ev, scan_files, symbols):
+            err(where, rule, message)
 
     # Rule 3: every reference resolves, and ids are unique.
     modules = {m["id"] for m in atlas["modules"]}
@@ -201,6 +189,25 @@ def validate(atlas: dict, scan: dict) -> list[dict]:
         if redact(value)[1]:
             err(where, "secret", "contains what looks like a secret value; remove it")
     return errors
+
+
+def check_citation(ev: dict, scan_files: dict, symbols: dict) -> list[tuple[str, str]]:
+    """Rules 1 + 2 for one citation: a scanned file, real lines, and a cited symbol that really sits there."""
+    f = scan_files.get(ev["path"])
+    if f is None:
+        return [("evidence", f"{ev['path']} is not a scanned file")]
+    problems = []
+    # ponytail: scan stores newline count; +1 allows a last line without a trailing newline
+    if not 1 <= ev["start_line"] <= ev["end_line"] <= f["loc"] + 1:
+        problems.append(("evidence", f"lines {ev['start_line']}-{ev['end_line']} are outside {ev['path']} ({f['loc']} lines)"))
+    if "symbol" in ev:
+        sym = symbols.get((ev["path"], ev["symbol"]))
+        if sym is None:
+            problems.append(("symbol", f"{ev['symbol']} is not defined in {ev['path']}"))
+        elif not (ev["start_line"] <= sym["end_line"] and sym["start_line"] <= ev["end_line"]):
+            problems.append(("symbol", f"{ev['symbol']} is at lines {sym['start_line']}-{sym['end_line']}, "
+                                       f"not {ev['start_line']}-{ev['end_line']}"))
+    return problems
 
 
 def evidence(node, where=""):

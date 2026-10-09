@@ -28,3 +28,13 @@ Then stop: show the user a short outline (modules → workflows → stages, with
 - `clusters.modules`: one per top-level package or app folder, with a suggested `role`.
 - `clusters.workflows`: skeletons to name in business language; merge or split as the code demands.
 - Framework-specific wiring (router prefixes, `Depends`, Celery tasks sent by name) is not resolved until the adapters milestone; read the excerpt when a link looks missing.
+
+## Walkthroughs (on demand)
+
+Never generated upfront. Trigger: "walk me through <file>", "explain <file> step by step", "what does <file> do", `/stack-to-the-future walkthrough <file>`.
+
+1. If `<root>/.atlas/scan.json` is missing or older than the file, run `ATLAS scan <root>` first. A walkthrough works without `atlas.json`, but the card and stages make it better.
+2. `ATLAS walkthrough-context <path> --root <root>`: the file's card, the stages it serves, its symbols with lines, who calls it and what it calls, status changes, permission checks, incomplete code, and the redacted source with line numbers. Secrets files are refused; say so and stop.
+3. Write `<root>/.atlas/walkthroughs/<path>.md` following `templates/walkthrough.md` exactly, from that context only.
+4. `ATLAS check-walkthrough <root>/.atlas/walkthroughs/<path>.md --root <root>`. Fix exactly the listed items and check again, up to 3 rounds; if a claim still can't be cited, remove it.
+5. Tell the user the path and give a three-line summary. Don't paste the whole walkthrough unless asked.

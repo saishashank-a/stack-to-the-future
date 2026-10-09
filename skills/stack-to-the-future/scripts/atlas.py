@@ -55,19 +55,42 @@ def cmd_validate(args) -> None:
 
 
 def cmd_excerpt(args) -> None:
-    from redact import is_secret_file, redact
+    from redact import read_redacted
 
-    root = Path(args.root).resolve()
-    target = (root / args.path).resolve()
-    if not target.is_relative_to(root) or not target.is_file():
-        sys.exit(f"{args.path} is not a file inside {root}")
-    if is_secret_file(args.path):
-        sys.exit(f"{args.path} is a secrets file; it is never read.")
-    lines = redact(target.read_text(errors="replace"))[0].splitlines()
+    try:
+        lines = read_redacted(args.root, args.path)
+    except ValueError as e:
+        sys.exit(str(e))
     start, end = max(args.start, 1), min(args.end, len(lines))
     width = len(str(end))
     for n in range(start, end + 1):
         print(f"{n:>{width}} | {lines[n - 1]}")
+
+
+def cmd_walkthrough_context(args) -> None:
+    import walkthrough
+
+    root = Path(args.root).resolve()
+    if not (root / ".atlas" / "scan.json").exists():
+        sys.exit(f"No {root / '.atlas' / 'scan.json'}; run `atlas.py scan {root}` first.")
+    try:
+        print(walkthrough.context(root, args.path), end="")
+    except ValueError as e:
+        sys.exit(str(e))
+
+
+def cmd_check_walkthrough(args) -> None:
+    import validate
+    import walkthrough
+
+    root = Path(args.root).resolve()
+    scan_path = root / ".atlas" / "scan.json"
+    if not scan_path.exists():
+        sys.exit(f"No {scan_path}; run `atlas.py scan {root}` first.")
+    errors = walkthrough.check(Path(args.walkthrough).read_text(), json.loads(scan_path.read_text()))
+    print(validate.report(errors))
+    if errors:
+        sys.exit(1)
 
 
 def main(argv=None) -> None:
@@ -87,6 +110,14 @@ def main(argv=None) -> None:
     p.add_argument("end", type=int)
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_excerpt)
+    p = sub.add_parser("walkthrough-context", help="everything known about one file, for writing its walkthrough")
+    p.add_argument("path")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_walkthrough_context)
+    p = sub.add_parser("check-walkthrough", help="check a walkthrough's citations, steps and redaction")
+    p.add_argument("walkthrough")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_check_walkthrough)
     args = parser.parse_args(argv)
     args.func(args)
 
