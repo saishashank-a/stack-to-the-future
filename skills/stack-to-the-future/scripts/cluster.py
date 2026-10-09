@@ -17,7 +17,37 @@ def module_folders(paths: list[str]) -> list[str]:
         if len(children) != 1:
             break
         base += children[0] + "/"
-    return [base + c for c in children] if children else [base.rstrip("/") or "."]
+    if is_next_app(base, paths):
+        return next_app_folders(base, paths)
+    if not children:
+        return [base.rstrip("/") or "."]
+    return [f for c in children
+            for f in (next_app_folders(base + c + "/", paths) if is_next_app(base + c + "/", paths) else [base + c])]
+
+
+NEXT_ROOT = re.compile(r"(page|layout)\.(tsx|ts|jsx|js)")
+
+
+def is_next_app(folder: str, paths: list[str]) -> bool:
+    return (folder.rstrip("/").rsplit("/", 1)[-1] == "app"
+            and any(p.startswith(folder) and NEXT_ROOT.fullmatch(p[len(folder):]) for p in paths))
+
+
+def next_app_folders(base: str, paths: list[str]) -> list[str]:
+    """Next.js App Router: a module per first URL segment. Route groups `(x)` and `api/` are see-through;
+    root files and `_private` folders form the app's own module, listed last so deeper folders claim files first."""
+    def folders_under(prefix):
+        return sorted({p[len(prefix):].split("/")[0] for p in paths if p.startswith(prefix) and "/" in p[len(prefix):]})
+
+    found, todo = [], [base]
+    while todo:
+        prefix = todo.pop(0)
+        for c in folders_under(prefix):
+            if (c.startswith("(") and c.endswith(")")) or c == "api":
+                todo.append(prefix + c + "/")
+            elif not c.startswith("_"):
+                found.append(prefix + c)
+    return sorted(found) + [base.rstrip("/") or "."]
 
 
 def slug(text: str) -> str:
