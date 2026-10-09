@@ -228,8 +228,7 @@ def check_citation(ev: dict, scan_files: dict, symbols: dict) -> list[tuple[str,
     if f is None:
         return [("evidence", f"{ev['path']} is not a scanned file")]
     problems = []
-    # ponytail: scan stores newline count; +1 allows a last line without a trailing newline
-    if not 1 <= ev["start_line"] <= ev["end_line"] <= f["loc"] + 1:
+    if not 1 <= ev["start_line"] <= ev["end_line"] <= f["loc"]:
         problems.append(("evidence", f"lines {ev['start_line']}-{ev['end_line']} are outside {ev['path']} ({f['loc']} lines)"))
     if "symbol" in ev:
         sym = symbols.get((ev["path"], ev["symbol"]))

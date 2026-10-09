@@ -295,7 +295,7 @@ Adapters stay in (f) as listed. Consequence: the (b) scanner is framework-agnost
 - **(b) Workflow skeletons group entry points by file, reachability and shared status machines,** not by shared helper code; shared CRUD/dependency helpers otherwise chain every route into one skeleton on real repos.
 - **(b) Module rule on monorepos.** With `backend/` + `frontend/` at the top, each becomes one module, as decided. On the FastAPI template that makes `backend` one module with six workflow skeletons (items, login, users, ...), which the checkpoint can split.
 - **(b) SQLModel** classes count as data tables only with `table=True`; the rest are request/response shapes.
-- **(c) Validator line bound is `end_line <= loc + 1`** because the scan stores newline counts. Follow-up: scan stores an exact `lines` count per file, then drop the `+1`.
+- **(c) Validator line bound is `end_line <= loc`.** `loc` is the exact line count (a last line without a trailing newline counts); the earlier `+1` slack is gone.
 - **(c) "Never edit locked items" is enforced only by instructions** until `merge` (milestone d) can compare against the previous `atlas.json`.
 - **(c) The exit-check draft passed in one round, but was written by the same context that wrote the golden atlas,** so it does not prove the instructions work blind. A fresh-context draft is the real test.
 - **(f) Adapters:** routes carry full prefixed paths (settings-driven prefixes shown as `{NAME}`); `Depends`/`dependencies=` become call edges and access checks; Celery `send_task` by name and beat schedules resolve; SQLAlchemy events and enum status columns link up; Next.js App Router via `tree-sitter-typescript` 0.23.2 only inside its adapter. Test app: `fixtures/nextjs-app/`.
