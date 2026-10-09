@@ -328,7 +328,7 @@
    "layer": "business",
    "shape": "pill",
    "x": 50,
-   "y": 1376,
+   "y": 1166,
    "width": 180,
    "height": 68,
    "label": "Employee asks for time\noff",
@@ -356,7 +356,7 @@
    "layer": "business",
    "shape": "diamond",
    "x": 310,
-   "y": 1358,
+   "y": 1148,
    "width": 200,
    "height": 104,
    "label": "Decide who needs\nto approve",
@@ -381,7 +381,7 @@
    "layer": "business",
    "shape": "rect",
    "x": 590,
-   "y": 1166,
+   "y": 1376,
    "width": 180,
    "height": 68,
    "label": "Approved automatically",
@@ -406,7 +406,7 @@
    "layer": "business",
    "shape": "rect",
    "x": 590,
-   "y": 1586,
+   "y": 956,
    "width": 180,
    "height": 68,
    "label": "Manager approves their\nown break",
@@ -431,7 +431,7 @@
    "layer": "business",
    "shape": "rect",
    "x": 590,
-   "y": 956,
+   "y": 1586,
    "width": 180,
    "height": 68,
    "label": "Manager is asked to\nreview",
@@ -458,7 +458,7 @@
    "layer": "business",
    "shape": "diamond",
    "x": 850,
-   "y": 938,
+   "y": 1568,
    "width": 200,
    "height": 104,
    "label": "Manager approves\nor declines",
@@ -485,7 +485,7 @@
    "layer": "business",
    "shape": "pill",
    "x": 1130,
-   "y": 956,
+   "y": 1586,
    "width": 180,
    "height": 68,
    "label": "Request declined",
@@ -512,7 +512,7 @@
    "layer": "business",
    "shape": "rect",
    "x": 1130,
-   "y": 1376,
+   "y": 1166,
    "width": 180,
    "height": 68,
    "label": "Days come off the\nbalance",
@@ -540,7 +540,7 @@
    "layer": "business",
    "shape": "rect",
    "x": 1400,
-   "y": 1376,
+   "y": 1166,
    "width": 180,
    "height": 68,
    "label": "Employee is told",
@@ -566,7 +566,7 @@
    "layer": "business",
    "shape": "pill",
    "x": 1670,
-   "y": 1376,
+   "y": 1166,
    "width": 180,
    "height": 68,
    "label": "Time off is booked",
@@ -591,7 +591,7 @@
    "layer": "business",
    "shape": "pill",
    "x": 1940,
-   "y": 1376,
+   "y": 1166,
    "width": 180,
    "height": 68,
    "label": "Employee cancels\nbooked leave",
@@ -950,11 +950,11 @@
    "points": [
     [
      230,
-     1410
+     1200
     ],
     [
      310,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -979,19 +979,19 @@
    "points": [
     [
      510,
-     1410
-    ],
-    [
-     540,
-     1410
+     1200
     ],
     [
      540,
      1200
+    ],
+    [
+     540,
+     1410
     ],
     [
      590,
-     1200
+     1410
     ]
    ],
    "style": {
@@ -1016,19 +1016,19 @@
    "points": [
     [
      510,
-     1410
+     1200
     ],
     [
      547,
-     1410
+     1200
     ],
     [
      547,
-     1620
+     990
     ],
     [
      590,
-     1620
+     990
     ]
    ],
    "style": {
@@ -1053,19 +1053,19 @@
    "points": [
     [
      510,
-     1410
+     1200
     ],
     [
      554,
-     1410
+     1200
     ],
     [
      554,
-     990
+     1620
     ],
     [
      590,
-     990
+     1620
     ]
    ],
    "style": {
@@ -1090,11 +1090,11 @@
    "points": [
     [
      770,
-     990
+     1620
     ],
     [
      850,
-     990
+     1620
     ]
    ],
    "style": {
@@ -1119,19 +1119,19 @@
    "points": [
     [
      1050,
-     990
+     1620
     ],
     [
      1100,
-     990
+     1620
     ],
     [
      1100,
-     1410
+     1200
     ],
     [
      1130,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -1156,11 +1156,11 @@
    "points": [
     [
      1050,
-     990
+     1620
     ],
     [
      1130,
-     990
+     1620
     ]
    ],
    "style": {
@@ -1185,19 +1185,19 @@
    "points": [
     [
      770,
-     1200
-    ],
-    [
-     1100,
-     1200
+     1410
     ],
     [
      1100,
      1410
+    ],
+    [
+     1100,
+     1200
     ],
     [
      1130,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -1222,19 +1222,19 @@
    "points": [
     [
      770,
-     1620
+     990
     ],
     [
      1100,
-     1620
+     990
     ],
     [
      1100,
-     1410
+     1200
     ],
     [
      1130,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -1259,11 +1259,11 @@
    "points": [
     [
      1310,
-     1410
+     1200
     ],
     [
      1400,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -1288,11 +1288,11 @@
    "points": [
     [
      1580,
-     1410
+     1200
     ],
     [
      1670,
-     1410
+     1200
     ]
    ],
    "style": {
@@ -1317,11 +1317,11 @@
    "points": [
     [
      1850,
-     1410
+     1200
     ],
     [
      1940,
-     1410
+     1200
     ]
    ],
    "style": {

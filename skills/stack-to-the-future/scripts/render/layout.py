@@ -1,8 +1,9 @@
 """Shared deterministic layout: the same atlas always gives the same coordinates, whichever renderer draws it.
 
 Plates run left to right. Stages travelled by every variant (or none) sit on the centre lane; a stage that belongs to
-exactly one variant goes to that variant's lane (above, below, further above...). Arrows elbow in the gaps between
-columns: near the source when a branch leaves the trunk, near the target when it merges back.
+exactly one variant goes to that variant's lane (below, above, further below...), so the trunk stays near the top on
+phones. Arrows elbow in the gaps between columns: near the source when a branch leaves the trunk, near the target
+when it merges back.
 """
 import textwrap
 
@@ -13,7 +14,7 @@ NEUTRAL = "#495057"
 NODE_W, NODE_H, DECISION_W, DECISION_H = 180, 68, 200, 104
 COL_W, LANE_H, PAD, TITLE_H = 270, 210, 40, 0
 LABEL_LINES, LABEL_LINE_H = 4, 15
-LANES = [-1, 1, -2, 2, -3, 3, -4, 4]
+LANES = [1, -1, 2, -2, 3, -3, 4, -4]  # first variant just below the trunk; odd counts put the extra lane below
 SHAPES = {"start": "pill", "end": "pill", "decision": "diamond", "step": "rect"}
 ORDER = {"owner": 0, "helper": 1, "shared_system": 2, "foundation": 3}
 RAIL_W, RAIL_H, NOTE_W = 210, 46, 280
