@@ -39,7 +39,8 @@ stack-to-the-future/                  # this repo = a Claude Code plugin
 │   │   ├── cluster.py                # modules + workflow skeletons from graph and detections
 │   │   ├── validate.py               # JSON Schema + evidence checks (section 2.3)
 │   │   ├── redact.py                 # secret detection and scrubbing (section 6)
-│   │   ├── cache.py                  # per-file hash cache, merge with human corrections
+│   │   ├── cache.py                  # per-file hash cache (keyed by content hash + scanner version)
+│   │   ├── checkpoint.py             # merge with locked corrections, stale, outline
 │   │   └── render/
 │   │       ├── html.py               # single self-contained HTML file (no CDN)
 │   │       ├── excalidraw.py         # .excalidraw JSON
@@ -301,3 +302,4 @@ Adapters stay in (f) as listed. Consequence: the (b) scanner is framework-agnost
 - **(f) Known gaps:** `cluster.py` treats Next.js route groups / `_private` / `api` folders as modules, so the root page and `app/actions.ts` land in no module; no TODO/stub detection in TypeScript; a router mounted twice keeps only its first mount.
 - **(g) Walkthrough citations** are backticked `` `path:start-end symbol` `` (or `` `path:line` ``); `check-walkthrough` reuses the validator's citation check, requires a citation per step, lints prose for code identifiers, and fails on redaction hits.
 - **(g) Known gaps:** redaction catches recognisable secret shapes only (a bare value pasted into prose with no context passes, same as the atlas); stale walkthroughs are caught only when `check-walkthrough` reruns. Candidate for the (d) `stale` command.
+- **(d) Checkpoint:** `merge` keeps locked items (and a whole previous workflow if the draft drops one holding a locked item), flags locked items whose evidence broke as `stale_override`; the validator tolerates evidence/ref errors only inside stale_override-flagged items. `stale` counts a stage as citing a file if its evidence *or* its file labels name it. `source_sha256` on cards is optional (falls back to the previous atlas's `files[]` hash). Cache facts are redacted before they hit disk; cached and uncached scans are byte-identical (checked after merging with the adapters).

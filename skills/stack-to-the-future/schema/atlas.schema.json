@@ -442,11 +442,16 @@
                   "stage",
                   "path",
                   "file",
-                  "workflow"
+                  "workflow",
+                  "module",
+                  "variant",
+                  "shared_system",
+                  "link"
                 ]
               },
               "id": {
-                "type": "string"
+                "type": "string",
+                "description": "A link's id is '<from_stage>-><to_stage>'; a card is targeted by its file."
               }
             }
           },
