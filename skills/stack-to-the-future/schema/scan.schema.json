@@ -131,6 +131,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "table": {
+            "type": "boolean"
           }
         }
       }
