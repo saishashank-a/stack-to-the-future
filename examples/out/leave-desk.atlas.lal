@@ -1,0 +1,1519 @@
+{
+ "lal_version": "0.1",
+ "title": "Leave Desk",
+ "generator": "stack-to-the-future",
+ "layers": [
+  {
+   "id": "foundation",
+   "name": "Foundation",
+   "opacity": 0.4
+  },
+  {
+   "id": "business",
+   "name": "Business",
+   "opacity": 1
+  },
+  {
+   "id": "annotations",
+   "name": "Notes",
+   "opacity": 1
+  }
+ ],
+ "frames": [
+  {
+   "id": "overview",
+   "kind": "overview",
+   "title": "Leave Desk: full body",
+   "x": 0,
+   "y": 0,
+   "width": 1120,
+   "height": 698
+  },
+  {
+   "id": "request-time-off",
+   "kind": "plate",
+   "title": "Request time off",
+   "x": 0,
+   "y": 898,
+   "width": 2240,
+   "height": 1068
+  },
+  {
+   "id": "monthly-summary",
+   "kind": "plate",
+   "title": "Monthly leave summary",
+   "x": 0,
+   "y": 2166,
+   "width": 1160,
+   "height": 366
+  },
+  {
+   "id": "export-leave-data",
+   "kind": "plate",
+   "title": "Export leave data",
+   "x": 0,
+   "y": 2732,
+   "width": 900,
+   "height": 422
+  }
+ ],
+ "nodes": [
+  {
+   "id": "foundation:band",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "band",
+   "x": 20,
+   "y": 414,
+   "width": 1080,
+   "height": 264,
+   "label": "Foundation",
+   "sublabels": [],
+   "style": {
+    "stroke": "dotted",
+    "color": "#adb5bd",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "band",
+    "id": "foundation"
+   }
+  },
+  {
+   "id": "foundation:configuration",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "note",
+   "x": 40,
+   "y": 454,
+   "width": 230,
+   "height": 49,
+   "label": "Settings",
+   "sublabels": [
+    "app/core/config.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#adb5bd",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "foundation_group",
+    "id": "configuration"
+   }
+  },
+  {
+   "id": "foundation:secrets_loading",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "note",
+   "x": 290,
+   "y": 454,
+   "width": 230,
+   "height": 49,
+   "label": "Environment file",
+   "sublabels": [
+    ".env.example"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#adb5bd",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "foundation_group",
+    "id": "secrets_loading"
+   }
+  },
+  {
+   "id": "foundation:database_setup",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "note",
+   "x": 540,
+   "y": 454,
+   "width": 230,
+   "height": 49,
+   "label": "Database connection",
+   "sublabels": [
+    "app/core/database.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#adb5bd",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "foundation_group",
+    "id": "database_setup"
+   }
+  },
+  {
+   "id": "foundation:dependencies",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "note",
+   "x": 790,
+   "y": 454,
+   "width": 230,
+   "height": 49,
+   "label": "Libraries",
+   "sublabels": [
+    "requirements.txt"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#adb5bd",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "foundation_group",
+    "id": "dependencies"
+   }
+  },
+  {
+   "id": "foundation:wiring",
+   "frame": "overview",
+   "layer": "foundation",
+   "shape": "note",
+   "x": 40,
+   "y": 519,
+   "width": 230,
+   "height": 139,
+   "label": "App and worker start-up",
+   "sublabels": [
+    "app/main.py",
+    "app/worker.py",
+    "app/__init__.py",
+    "app/core/__init__.py",
+    "app/leave/__init__.py",
+    "app/reports/__init__.py",
+    "+1 more"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#adb5bd",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "foundation_group",
+    "id": "wiring"
+   }
+  },
+  {
+   "id": "module:leave",
+   "frame": "overview",
+   "layer": "business",
+   "shape": "rect",
+   "x": 40,
+   "y": 40,
+   "width": 270,
+   "height": 160,
+   "label": "Time off\nHow a request for time off is\nmade, approved or declined, and\ntaken from the balance.",
+   "sublabels": [],
+   "style": {
+    "stroke": "solid",
+    "color": "#1c7ed6",
+    "fill": null
+   },
+   "link": "request-time-off",
+   "source": {
+    "kind": "module",
+    "id": "leave"
+   }
+  },
+  {
+   "id": "module:reports",
+   "frame": "overview",
+   "layer": "business",
+   "shape": "rect",
+   "x": 440,
+   "y": 40,
+   "width": 270,
+   "height": 160,
+   "label": "HR reporting\nMonthly totals of approved leave\nfor HR, plus a planned spreadsheet\nexport.",
+   "sublabels": [],
+   "style": {
+    "stroke": "solid",
+    "color": "#1c7ed6",
+    "fill": null
+   },
+   "link": "monthly-summary",
+   "source": {
+    "kind": "module",
+    "id": "reports"
+   }
+  },
+  {
+   "id": "shared:email",
+   "frame": "overview",
+   "layer": "business",
+   "shape": "note",
+   "x": 830,
+   "y": 40,
+   "width": 250,
+   "height": 84,
+   "label": "Email\nSends every email the app\nproduces.",
+   "sublabels": [
+    "app/shared/notifications.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "email"
+   }
+  },
+  {
+   "id": "shared:audit-log",
+   "frame": "overview",
+   "layer": "business",
+   "shape": "note",
+   "x": 830,
+   "y": 140,
+   "width": 250,
+   "height": 84,
+   "label": "Audit log\nPermanent record of leave\ndecisions.",
+   "sublabels": [
+    "app/shared/audit.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "audit-log"
+   }
+  },
+  {
+   "id": "shared:sign-in-and-roles",
+   "frame": "overview",
+   "layer": "business",
+   "shape": "note",
+   "x": 830,
+   "y": 240,
+   "width": 250,
+   "height": 84,
+   "label": "Sign-in and roles\nIdentifies the caller and checks\nthey are an employee, manager or\nHR as required.",
+   "sublabels": [
+    "app/shared/auth.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "sign-in-and-roles"
+   }
+  },
+  {
+   "id": "stage:request-time-off/submit",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "pill",
+   "x": 50,
+   "y": 1376,
+   "width": 180,
+   "height": 68,
+   "label": "Employee asks for time\noff",
+   "sublabels": [
+    "routes.py: submit_leave",
+    "service.py: submit_request",
+    "schemas.py: LeaveRequestIn",
+    "+3 more"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/submit"
+   },
+   "caption": "Employee"
+  },
+  {
+   "id": "stage:request-time-off/choose-route",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "diamond",
+   "x": 310,
+   "y": 1358,
+   "width": 200,
+   "height": 104,
+   "label": "Decide who needs\nto approve",
+   "sublabels": [
+    "service.py: choose_route"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/choose-route"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/approve-directly",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "rect",
+   "x": 590,
+   "y": 1166,
+   "width": 180,
+   "height": 68,
+   "label": "Approved automatically",
+   "sublabels": [
+    "service.py: approve_directly"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#1c7ed6",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/approve-directly"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/self-approve",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "rect",
+   "x": 590,
+   "y": 1586,
+   "width": 180,
+   "height": 68,
+   "label": "Manager approves their\nown break",
+   "sublabels": [
+    "service.py: self_approve"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#e8590c",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/self-approve"
+   },
+   "caption": "Manager"
+  },
+  {
+   "id": "stage:request-time-off/notify-manager",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "rect",
+   "x": 590,
+   "y": 956,
+   "width": 180,
+   "height": 68,
+   "label": "Manager is asked to\nreview",
+   "sublabels": [
+    "tasks.py: notify_manager",
+    "service.py: notify_manager.delay",
+    "notifications.py: send_email"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/notify-manager"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/manager-review",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "diamond",
+   "x": 850,
+   "y": 938,
+   "width": 200,
+   "height": 104,
+   "label": "Manager approves\nor declines",
+   "sublabels": [
+    "routes.py: approve_leave, reject_le…",
+    "service.py: approve_by_manager, _ch…",
+    "auth.py: require_manager"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/manager-review"
+   },
+   "caption": "Manager"
+  },
+  {
+   "id": "stage:request-time-off/request-declined",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "pill",
+   "x": 1130,
+   "y": 956,
+   "width": 180,
+   "height": 68,
+   "label": "Request declined",
+   "sublabels": [
+    "service.py: reject_by_manager",
+    "tasks.py: notify_decision",
+    "audit.py: record"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/request-declined"
+   },
+   "caption": "Manager"
+  },
+  {
+   "id": "stage:request-time-off/deduct-balance",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "rect",
+   "x": 1130,
+   "y": 1376,
+   "width": 180,
+   "height": 68,
+   "label": "Days come off the\nbalance",
+   "sublabels": [
+    "service.py: _approve",
+    "balance.py: deduct",
+    "models.py: Employee.balance_days",
+    "audit.py: record"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/deduct-balance"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/notify-employee",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "rect",
+   "x": 1400,
+   "y": 1376,
+   "width": 180,
+   "height": 68,
+   "label": "Employee is told",
+   "sublabels": [
+    "tasks.py: notify_decision",
+    "notifications.py: send_email"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/notify-employee"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/leave-booked",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "pill",
+   "x": 1670,
+   "y": 1376,
+   "width": 180,
+   "height": 68,
+   "label": "Time off is booked",
+   "sublabels": [
+    "models.py: LeaveStatus.APPROVED"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/leave-booked"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:request-time-off/employee-cancels",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "pill",
+   "x": 1940,
+   "y": 1376,
+   "width": 180,
+   "height": 68,
+   "label": "Employee cancels\nbooked leave",
+   "sublabels": [
+    "models.py: LeaveStatus.CANCELLED"
+   ],
+   "style": {
+    "stroke": "dashed",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "request-time-off/employee-cancels"
+   },
+   "caption": "Employee"
+  },
+  {
+   "id": "rail:request-time-off:email",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "note",
+   "x": 40,
+   "y": 1788,
+   "width": 210,
+   "height": 46,
+   "label": "Email",
+   "sublabels": [
+    "app/shared/notifications.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "email"
+   }
+  },
+  {
+   "id": "rail:request-time-off:audit-log",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "note",
+   "x": 270,
+   "y": 1788,
+   "width": 210,
+   "height": 46,
+   "label": "Audit log",
+   "sublabels": [
+    "app/shared/audit.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "audit-log"
+   }
+  },
+  {
+   "id": "rail:request-time-off:sign-in-and-roles",
+   "frame": "request-time-off",
+   "layer": "business",
+   "shape": "note",
+   "x": 500,
+   "y": 1788,
+   "width": 210,
+   "height": 46,
+   "label": "Sign-in and roles",
+   "sublabels": [
+    "app/shared/auth.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "sign-in-and-roles"
+   }
+  },
+  {
+   "id": "stage:monthly-summary/summary-due",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "pill",
+   "x": 50,
+   "y": 2224,
+   "width": 180,
+   "height": 68,
+   "label": "Monthly summary is due",
+   "sublabels": [
+    "tasks.py: monthly_summary",
+    "routes.py: run_monthly_summary",
+    "auth.py: require_hr"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "monthly-summary/summary-due"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:monthly-summary/count-approved-leave",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "rect",
+   "x": 320,
+   "y": 2224,
+   "width": 180,
+   "height": 68,
+   "label": "Count last month's\napproved leave",
+   "sublabels": [
+    "service.py: approved_leave_by_person",
+    "models.py: LeaveRequest"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "monthly-summary/count-approved-leave"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:monthly-summary/write-summary",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "rect",
+   "x": 590,
+   "y": 2224,
+   "width": 180,
+   "height": 68,
+   "label": "Write the summary",
+   "sublabels": [
+    "service.py: format_summary"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "monthly-summary/write-summary"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "stage:monthly-summary/summary-sent",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "pill",
+   "x": 860,
+   "y": 2224,
+   "width": 180,
+   "height": 68,
+   "label": "HR receives the\nsummary",
+   "sublabels": [
+    "tasks.py: monthly_summary",
+    "notifications.py: send_email"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "monthly-summary/summary-sent"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "rail:monthly-summary:email",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "note",
+   "x": 40,
+   "y": 2426,
+   "width": 210,
+   "height": 46,
+   "label": "Email",
+   "sublabels": [
+    "app/shared/notifications.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "email"
+   }
+  },
+  {
+   "id": "rail:monthly-summary:sign-in-and-roles",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "shape": "note",
+   "x": 270,
+   "y": 2426,
+   "width": 210,
+   "height": 46,
+   "label": "Sign-in and roles",
+   "sublabels": [
+    "app/shared/auth.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "sign-in-and-roles"
+   }
+  },
+  {
+   "id": "stage:export-leave-data/hr-asks",
+   "frame": "export-leave-data",
+   "layer": "business",
+   "shape": "pill",
+   "x": 50,
+   "y": 2790,
+   "width": 180,
+   "height": 68,
+   "label": "HR asks for a\nspreadsheet",
+   "sublabels": [
+    "routes.py: export",
+    "auth.py: require_hr"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "export-leave-data/hr-asks"
+   },
+   "caption": "HR"
+  },
+  {
+   "id": "stage:export-leave-data/build-export",
+   "frame": "export-leave-data",
+   "layer": "business",
+   "shape": "pill",
+   "x": 320,
+   "y": 2790,
+   "width": 180,
+   "height": 68,
+   "label": "Build the spreadsheet",
+   "sublabels": [
+    "service.py: export_csv"
+   ],
+   "style": {
+    "stroke": "dashed",
+    "color": "#495057",
+    "fill": null
+   },
+   "link": null,
+   "source": {
+    "kind": "stage",
+    "id": "export-leave-data/build-export"
+   },
+   "caption": "System"
+  },
+  {
+   "id": "rail:export-leave-data:sign-in-and-roles",
+   "frame": "export-leave-data",
+   "layer": "business",
+   "shape": "note",
+   "x": 40,
+   "y": 2992,
+   "width": 210,
+   "height": 46,
+   "label": "Sign-in and roles",
+   "sublabels": [
+    "app/shared/auth.py"
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "fill": "#f1f3f5"
+   },
+   "link": null,
+   "source": {
+    "kind": "shared_system",
+    "id": "sign-in-and-roles"
+   }
+  }
+ ],
+ "connectors": [
+  {
+   "id": "link:leave->reports",
+   "frame": "overview",
+   "layer": "business",
+   "from": "module:leave",
+   "to": "module:reports",
+   "label": "approved leave is counted in next month's summary",
+   "points": [
+    [
+     310,
+     120
+    ],
+    [
+     440,
+     120
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "link",
+    "id": "leave->reports"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-submit-route",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/submit",
+   "to": "stage:request-time-off/choose-route",
+   "label": "",
+   "points": [
+    [
+     230,
+     1410
+    ],
+    [
+     310,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-submit-route"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-route-direct",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/choose-route",
+   "to": "stage:request-time-off/approve-directly",
+   "label": "1 day or less",
+   "points": [
+    [
+     510,
+     1410
+    ],
+    [
+     540,
+     1410
+    ],
+    [
+     540,
+     1200
+    ],
+    [
+     590,
+     1200
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#1c7ed6",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/direct",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-route-direct"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-route-self",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/choose-route",
+   "to": "stage:request-time-off/self-approve",
+   "label": "manager, up to 3 days",
+   "points": [
+    [
+     510,
+     1410
+    ],
+    [
+     547,
+     1410
+    ],
+    [
+     547,
+     1620
+    ],
+    [
+     590,
+     1620
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#e8590c",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/self-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-route-self"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-route-manager",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/choose-route",
+   "to": "stage:request-time-off/notify-manager",
+   "label": "everything else",
+   "points": [
+    [
+     510,
+     1410
+    ],
+    [
+     554,
+     1410
+    ],
+    [
+     554,
+     990
+    ],
+    [
+     590,
+     990
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/manager-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-route-manager"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-notify-review",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/notify-manager",
+   "to": "stage:request-time-off/manager-review",
+   "label": "",
+   "points": [
+    [
+     770,
+     990
+    ],
+    [
+     850,
+     990
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/manager-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-notify-review"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-review-approved",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/manager-review",
+   "to": "stage:request-time-off/deduct-balance",
+   "label": "approved",
+   "points": [
+    [
+     1050,
+     990
+    ],
+    [
+     1100,
+     990
+    ],
+    [
+     1100,
+     1410
+    ],
+    [
+     1130,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/manager-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-review-approved"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-review-declined",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/manager-review",
+   "to": "stage:request-time-off/request-declined",
+   "label": "declined",
+   "points": [
+    [
+     1050,
+     990
+    ],
+    [
+     1130,
+     990
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#2b8a3e",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/manager-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-review-declined"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-direct-deduct",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/approve-directly",
+   "to": "stage:request-time-off/deduct-balance",
+   "label": "",
+   "points": [
+    [
+     770,
+     1200
+    ],
+    [
+     1100,
+     1200
+    ],
+    [
+     1100,
+     1410
+    ],
+    [
+     1130,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#1c7ed6",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/direct",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-direct-deduct"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-self-deduct",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/self-approve",
+   "to": "stage:request-time-off/deduct-balance",
+   "label": "",
+   "points": [
+    [
+     770,
+     1620
+    ],
+    [
+     1100,
+     1620
+    ],
+    [
+     1100,
+     1410
+    ],
+    [
+     1130,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#e8590c",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": "request-time-off/self-approval",
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-self-deduct"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-deduct-notify",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/deduct-balance",
+   "to": "stage:request-time-off/notify-employee",
+   "label": "",
+   "points": [
+    [
+     1310,
+     1410
+    ],
+    [
+     1400,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-deduct-notify"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-notify-booked",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/notify-employee",
+   "to": "stage:request-time-off/leave-booked",
+   "label": "",
+   "points": [
+    [
+     1580,
+     1410
+    ],
+    [
+     1670,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-notify-booked"
+   }
+  },
+  {
+   "id": "path:request-time-off/p-booked-cancel",
+   "frame": "request-time-off",
+   "layer": "business",
+   "from": "stage:request-time-off/leave-booked",
+   "to": "stage:request-time-off/employee-cancels",
+   "label": "not built",
+   "points": [
+    [
+     1850,
+     1410
+    ],
+    [
+     1940,
+     1410
+    ]
+   ],
+   "style": {
+    "stroke": "dashed",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "request-time-off/p-booked-cancel"
+   }
+  },
+  {
+   "id": "path:monthly-summary/p-due-count",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "from": "stage:monthly-summary/summary-due",
+   "to": "stage:monthly-summary/count-approved-leave",
+   "label": "",
+   "points": [
+    [
+     230,
+     2258
+    ],
+    [
+     320,
+     2258
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "monthly-summary/p-due-count"
+   }
+  },
+  {
+   "id": "path:monthly-summary/p-count-write",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "from": "stage:monthly-summary/count-approved-leave",
+   "to": "stage:monthly-summary/write-summary",
+   "label": "",
+   "points": [
+    [
+     500,
+     2258
+    ],
+    [
+     590,
+     2258
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "monthly-summary/p-count-write"
+   }
+  },
+  {
+   "id": "path:monthly-summary/p-write-sent",
+   "frame": "monthly-summary",
+   "layer": "business",
+   "from": "stage:monthly-summary/write-summary",
+   "to": "stage:monthly-summary/summary-sent",
+   "label": "",
+   "points": [
+    [
+     770,
+     2258
+    ],
+    [
+     860,
+     2258
+    ]
+   ],
+   "style": {
+    "stroke": "solid",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "monthly-summary/p-write-sent"
+   }
+  },
+  {
+   "id": "path:export-leave-data/p-ask-build",
+   "frame": "export-leave-data",
+   "layer": "business",
+   "from": "stage:export-leave-data/hr-asks",
+   "to": "stage:export-leave-data/build-export",
+   "label": "",
+   "points": [
+    [
+     230,
+     2824
+    ],
+    [
+     320,
+     2824
+    ]
+   ],
+   "style": {
+    "stroke": "dashed",
+    "color": "#495057",
+    "width": 2,
+    "arrow": "end"
+   },
+   "group": null,
+   "source": {
+    "kind": "path",
+    "id": "export-leave-data/p-ask-build"
+   }
+  }
+ ],
+ "callouts": [
+  {
+   "id": "flag:request-time-off:cancel-never-happens",
+   "frame": "request-time-off",
+   "layer": "annotations",
+   "target": "stage:request-time-off/employee-cancels",
+   "kind": "missing_transition",
+   "text": "1. Requests have a 'cancelled' state but nothing ever sets it, so booked leave can't be cancelled.",
+   "x": 40,
+   "y": 1854,
+   "width": 280,
+   "height": 72
+  },
+  {
+   "id": "flag:request-time-off:carry-over-todo",
+   "frame": "request-time-off",
+   "layer": "annotations",
+   "target": "stage:request-time-off/deduct-balance",
+   "kind": "todo",
+   "text": "2. Unused days are lost at year end; carrying them over is still a to-do.",
+   "x": 340,
+   "y": 1854,
+   "width": 280,
+   "height": 56
+  },
+  {
+   "id": "flag:export-leave-data:export-not-built",
+   "frame": "export-leave-data",
+   "layer": "annotations",
+   "target": "stage:export-leave-data/build-export",
+   "kind": "not_implemented",
+   "text": "1. Spreadsheet export is a placeholder that always fails.",
+   "x": 40,
+   "y": 3058,
+   "width": 280,
+   "height": 56
+  }
+ ],
+ "legends": [
+  {
+   "frame": "request-time-off",
+   "entries": [
+    {
+     "id": "request-time-off/direct",
+     "label": "Automatic approval",
+     "detail": "when the request is for 1 day or less",
+     "color": "#1c7ed6"
+    },
+    {
+     "id": "request-time-off/self-approval",
+     "label": "Self-approval",
+     "detail": "when a manager asks for 3 days or less",
+     "color": "#e8590c"
+    },
+    {
+     "id": "request-time-off/manager-approval",
+     "label": "Manager approval",
+     "detail": "for every other request",
+     "color": "#2b8a3e"
+    }
+   ]
+  }
+ ]
+}
