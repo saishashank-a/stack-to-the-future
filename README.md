@@ -44,6 +44,7 @@ All scripts are deterministic; Claude only does the naming and writing. Nothing 
 
 ```sh
 uv run pytest
+STF_SMOKE=1 uv run pytest tests/test_real_repo.py   # clones full-stack-fastapi-template (network)
 ```
 
 ## License

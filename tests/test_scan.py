@@ -145,3 +145,40 @@ def test_cli_writes_atlas_folder(tmp_path):
     out = json.loads((repo / ".atlas" / "scan.json").read_text(encoding="utf-8"))
     assert out["clusters"]["draft_now"] == ["leave"]
     assert "scan.json" in (repo / ".atlas" / ".gitignore").read_text(encoding="utf-8")
+
+
+def test_generated_tests_configs_and_migrations_are_not_business(tmp_path):
+    files = {
+        "web/src/client/sdk.gen.ts": "export const x = 1;\n",
+        "web/src/routeTree.gen.ts": "export const r = 1;\n",
+        "web/src/types.d.ts": "declare const y: number;\n",
+        "web/src/__generated__/graphql.ts": "export const g = 1;\n",
+        "web/src/cart.test.tsx": "test('x', () => {});\n",
+        "web/vite.config.ts": "export default {};\n",
+        "web/src/cart.tsx": "export function Cart() { return null; }\n",
+        "api/proto/user_pb2.py": "X = 1\n",
+        "api/alembic/env.py": "def run_migrations_online():\n    pass\n",
+        "api/alembic/versions/0001_init.py": "def upgrade():\n    pass\n",
+        "api/shop/migrations/0002_price.py": "def forwards():\n    pass\n",
+        "api/shop/orders.py": "def place():\n    return 1\n",
+    }
+    for path, body in files.items():
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_text(body, encoding="utf-8")
+    hints = {f["path"]: (f["hint"], f.get("group")) for f in scanner.scan(tmp_path)["files"]}
+    for p in ["web/src/client/sdk.gen.ts", "web/src/routeTree.gen.ts", "web/src/types.d.ts",
+              "web/src/__generated__/graphql.ts", "web/src/cart.test.tsx", "api/proto/user_pb2.py"]:
+        assert hints[p] == ("ignored", None), p
+    assert hints["web/vite.config.ts"] == ("foundation", "configuration")
+    for p in ["api/alembic/env.py", "api/alembic/versions/0001_init.py", "api/shop/migrations/0002_price.py"]:
+        assert hints[p] == ("foundation", "database_setup"), p
+    assert hints["web/src/cart.tsx"] == hints["api/shop/orders.py"] == ("business", None)
+
+
+def test_sqlmodel_table_symbols_match_the_schema(tmp_path):
+    (tmp_path / "models.py").write_text(
+        "from sqlmodel import Field, SQLModel\n\n"
+        "class Item(SQLModel, table=True):\n    id: int = Field(primary_key=True)\n", encoding="utf-8")
+    result = scanner.scan(tmp_path)
+    jsonschema.validate(result, SCHEMA)
+    assert next(s for s in result["symbols"] if s["name"] == "Item")["table"] is True

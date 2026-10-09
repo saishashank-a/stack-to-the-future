@@ -38,6 +38,11 @@ CONFIG_FILES = {"config.py", "settings.py", "conf.py", "configuration.py"}
 DATABASE_FILES = {"database.py", "db.py", "session.py"}
 DATABASE_CALLS = {"create_engine", "create_async_engine", "sessionmaker", "async_sessionmaker", "declarative_base"}
 WIRING_FILES = {"main.py", "app.py", "wsgi.py", "asgi.py", "manage.py", "worker.py", "celery.py", "__main__.py"}
+GENERATED_FILES = ("*.gen.*", "*.generated.*", "*.d.ts", "*_pb2.py", "*_pb2_grpc.py")
+GENERATED_DIRS = {"generated", "__generated__"}
+JS_TEST_FILES = ("*.test.*", "*.spec.*")
+JS_CONFIG_FILES = ("*.config.ts", "*.config.js", "*.config.mjs", "*.config.cjs")
+MIGRATION_DIRS = {"migrations", "alembic"}
 
 ROUTE_RX = re.compile(r"^@\s*([\w.]+)\.(get|post|put|patch|delete|head|options|route|api_route|websocket)\s*\((.*)\)\s*$", re.S)
 JOB_RX = re.compile(r"^@\s*(?:[\w.]+\.)?(task|shared_task|periodic_task|actor|job)\b(?:\s*\((.*)\))?\s*$", re.S)
@@ -493,8 +498,13 @@ def hint(entry: dict, f: dict | None) -> dict:
     if any(fnmatch.fnmatch(name, p) for p in DEPENDENCY_FILES):
         return {"hint": "foundation", "group": "dependencies"}
     if lang not in CODE_LANGUAGES or TEST_DIRS & set(parts[:-1]) or fnmatch.fnmatch(name, "test_*.py") \
-            or fnmatch.fnmatch(name, "*_test.py") or name == "conftest.py":
+            or fnmatch.fnmatch(name, "*_test.py") or name == "conftest.py" \
+            or any(fnmatch.fnmatch(name, p) for p in GENERATED_FILES + JS_TEST_FILES) or GENERATED_DIRS & set(parts[:-1]):
         return {"hint": "ignored"}
+    if MIGRATION_DIRS & set(parts[:-1]):
+        return {"hint": "foundation", "group": "database_setup"}
+    if any(fnmatch.fnmatch(name, p) for p in JS_CONFIG_FILES):
+        return {"hint": "foundation", "group": "configuration"}
     if f is None:
         return {"hint": "business"}
     tails = {c["callee"].rsplit(".", 1)[-1] for c in f["calls"]}
