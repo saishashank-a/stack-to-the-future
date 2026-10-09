@@ -1,0 +1,620 @@
+{
+  "atlas_version": "0.1",
+  "project": {
+    "name": "Leave Desk",
+    "summary": "Employees ask for time off; small requests are approved straight away, managers can approve their own short breaks, everything else goes to a manager. HR gets a monthly summary.",
+    "generated_at": "2026-10-09T00:00:00Z",
+    "scanner_version": "hand-written",
+    "languages": ["python"],
+    "frameworks": ["fastapi", "sqlalchemy", "celery", "pydantic"]
+  },
+  "modules": [
+    {
+      "id": "leave",
+      "name": "Time off",
+      "summary": "How a request for time off is made, approved or declined, and taken from the balance.",
+      "drawn": true,
+      "workflows": ["request-time-off"],
+      "files": ["app/leave/models.py", "app/leave/schemas.py", "app/leave/routes.py", "app/leave/service.py", "app/leave/balance.py", "app/leave/tasks.py"],
+      "entry_points": [
+        { "kind": "api_route", "label": "POST /leave", "evidence": [{ "path": "app/leave/routes.py", "start_line": 14, "end_line": 16, "symbol": "submit_leave" }] },
+        { "kind": "api_route", "label": "GET /leave/mine", "evidence": [{ "path": "app/leave/routes.py", "start_line": 19, "end_line": 21, "symbol": "my_leave" }] },
+        { "kind": "api_route", "label": "POST /leave/{request_id}/approve", "evidence": [{ "path": "app/leave/routes.py", "start_line": 24, "end_line": 26, "symbol": "approve_leave" }] },
+        { "kind": "api_route", "label": "POST /leave/{request_id}/reject", "evidence": [{ "path": "app/leave/routes.py", "start_line": 29, "end_line": 31, "symbol": "reject_leave" }] },
+        { "kind": "background_job", "label": "leave.notify_manager", "evidence": [{ "path": "app/leave/tasks.py", "start_line": 8, "end_line": 13, "symbol": "notify_manager" }] },
+        { "kind": "background_job", "label": "leave.notify_decision", "evidence": [{ "path": "app/leave/tasks.py", "start_line": 16, "end_line": 21, "symbol": "notify_decision" }] }
+      ],
+      "evidence": [{ "path": "app/leave/service.py", "start_line": 1, "end_line": 1 }],
+      "provenance": "human"
+    },
+    {
+      "id": "reports",
+      "name": "HR reporting",
+      "summary": "Monthly totals of approved leave for HR, plus a planned spreadsheet export.",
+      "drawn": true,
+      "workflows": ["monthly-summary", "export-leave-data"],
+      "files": ["app/reports/routes.py", "app/reports/service.py", "app/reports/tasks.py"],
+      "entry_points": [
+        { "kind": "scheduled_job", "label": "reports.monthly_summary (1st of month, 06:00)", "evidence": [{ "path": "app/worker.py", "start_line": 8, "end_line": 13 }, { "path": "app/reports/tasks.py", "start_line": 11, "end_line": 17, "symbol": "monthly_summary" }] },
+        { "kind": "api_route", "label": "POST /reports/monthly/run", "evidence": [{ "path": "app/reports/routes.py", "start_line": 16, "end_line": 19, "symbol": "run_monthly_summary" }] },
+        { "kind": "api_route", "label": "GET /reports/export", "evidence": [{ "path": "app/reports/routes.py", "start_line": 22, "end_line": 24, "symbol": "export" }] }
+      ],
+      "evidence": [{ "path": "app/reports/service.py", "start_line": 1, "end_line": 1 }],
+      "provenance": "human"
+    }
+  ],
+  "links": [
+    {
+      "from_stage": "request-time-off/deduct-balance",
+      "to_stage": "monthly-summary/count-approved-leave",
+      "label": "approved leave is counted in next month's summary",
+      "evidence": [
+        { "path": "app/leave/service.py", "start_line": 72, "end_line": 77, "symbol": "_approve" },
+        { "path": "app/reports/service.py", "start_line": 10, "end_line": 19, "symbol": "approved_leave_by_person" }
+      ],
+      "provenance": "human"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "request-time-off",
+      "module": "leave",
+      "name": "Request time off",
+      "summary": "An employee asks for days off. Depending on length and who is asking, it is approved automatically, by the requester (if a manager), or by their manager. Approved days come off the balance and the employee is told.",
+      "actors": ["Employee", "Manager", "System"],
+      "stages": [
+        {
+          "id": "request-time-off/submit",
+          "name": "Employee asks for time off",
+          "description": "The employee picks dates and gives a reason. The request is refused straight away if they don't have enough days left.",
+          "actor": "Employee",
+          "kind": "start",
+          "files": [
+            { "file": "app/leave/routes.py", "contribution": "owner", "label": "routes.py: submit_leave" },
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: submit_request" },
+            { "file": "app/leave/schemas.py", "contribution": "helper", "label": "schemas.py: LeaveRequestIn" },
+            { "file": "app/leave/balance.py", "contribution": "helper", "label": "balance.py: has_enough" },
+            { "file": "app/shared/auth.py", "contribution": "shared_system", "label": "auth.py: current_employee" },
+            { "file": "app/shared/audit.py", "contribution": "shared_system", "label": "audit.py: record" }
+          ],
+          "evidence": [
+            { "path": "app/leave/routes.py", "start_line": 14, "end_line": 16, "symbol": "submit_leave" },
+            { "path": "app/leave/service.py", "start_line": 22, "end_line": 29, "symbol": "submit_request" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/choose-route",
+          "name": "Decide who needs to approve",
+          "description": "One day or less is approved automatically. A manager asking for up to three days approves it themselves. Everything else goes to their manager.",
+          "actor": "System",
+          "kind": "decision",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: choose_route" }
+          ],
+          "evidence": [{ "path": "app/leave/service.py", "start_line": 13, "end_line": 19, "symbol": "choose_route" }],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/approve-directly",
+          "name": "Approved automatically",
+          "description": "Short requests need no one's sign-off.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: approve_directly" }
+          ],
+          "evidence": [
+            { "path": "app/leave/service.py", "start_line": 30, "end_line": 31, "symbol": "submit_request" },
+            { "path": "app/leave/service.py", "start_line": 40, "end_line": 41, "symbol": "approve_directly" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/self-approve",
+          "name": "Manager approves their own break",
+          "description": "A manager's short request is approved in their own name, with no one above them asked.",
+          "actor": "Manager",
+          "kind": "step",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: self_approve" }
+          ],
+          "evidence": [
+            { "path": "app/leave/service.py", "start_line": 32, "end_line": 33, "symbol": "submit_request" },
+            { "path": "app/leave/service.py", "start_line": 44, "end_line": 45, "symbol": "self_approve" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/notify-manager",
+          "name": "Manager is asked to review",
+          "description": "The employee's manager gets an email saying a request is waiting.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "helper", "label": "service.py: notify_manager.delay" },
+            { "file": "app/leave/tasks.py", "contribution": "owner", "label": "tasks.py: notify_manager" },
+            { "file": "app/shared/notifications.py", "contribution": "shared_system", "label": "notifications.py: send_email" }
+          ],
+          "evidence": [
+            { "path": "app/leave/service.py", "start_line": 34, "end_line": 35, "symbol": "submit_request" },
+            { "path": "app/leave/tasks.py", "start_line": 8, "end_line": 13, "symbol": "notify_manager" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/manager-review",
+          "name": "Manager approves or declines",
+          "description": "The manager (or anyone in HR) says yes or no. Only the requester's own manager may decide, and only once.",
+          "actor": "Manager",
+          "kind": "decision",
+          "files": [
+            { "file": "app/leave/routes.py", "contribution": "owner", "label": "routes.py: approve_leave, reject_leave" },
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: approve_by_manager, _check_reviewer" },
+            { "file": "app/shared/auth.py", "contribution": "shared_system", "label": "auth.py: require_manager" }
+          ],
+          "evidence": [
+            { "path": "app/leave/routes.py", "start_line": 24, "end_line": 31 },
+            { "path": "app/leave/service.py", "start_line": 48, "end_line": 52, "symbol": "approve_by_manager" },
+            { "path": "app/leave/service.py", "start_line": 65, "end_line": 69, "symbol": "_check_reviewer" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/request-declined",
+          "name": "Request declined",
+          "description": "The request is marked declined, logged, and the employee is emailed. Nothing comes off the balance.",
+          "actor": "Manager",
+          "kind": "end",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: reject_by_manager" },
+            { "file": "app/leave/tasks.py", "contribution": "helper", "label": "tasks.py: notify_decision" },
+            { "file": "app/shared/audit.py", "contribution": "shared_system", "label": "audit.py: record" }
+          ],
+          "evidence": [{ "path": "app/leave/service.py", "start_line": 55, "end_line": 62, "symbol": "reject_by_manager" }],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/deduct-balance",
+          "name": "Days come off the balance",
+          "description": "Every approval route ends here: the request is marked approved, the days are taken from the employee's balance, and the approval is logged.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/leave/service.py", "contribution": "owner", "label": "service.py: _approve" },
+            { "file": "app/leave/balance.py", "contribution": "owner", "label": "balance.py: deduct" },
+            { "file": "app/leave/models.py", "contribution": "helper", "label": "models.py: Employee.balance_days" },
+            { "file": "app/shared/audit.py", "contribution": "shared_system", "label": "audit.py: record" }
+          ],
+          "evidence": [
+            { "path": "app/leave/service.py", "start_line": 72, "end_line": 76, "symbol": "_approve" },
+            { "path": "app/leave/balance.py", "start_line": 9, "end_line": 11, "symbol": "deduct" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/notify-employee",
+          "name": "Employee is told",
+          "description": "The employee gets an email with the outcome.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/leave/tasks.py", "contribution": "owner", "label": "tasks.py: notify_decision" },
+            { "file": "app/shared/notifications.py", "contribution": "shared_system", "label": "notifications.py: send_email" }
+          ],
+          "evidence": [
+            { "path": "app/leave/service.py", "start_line": 77, "end_line": 77, "symbol": "_approve" },
+            { "path": "app/leave/tasks.py", "start_line": 16, "end_line": 21, "symbol": "notify_decision" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/leave-booked",
+          "name": "Time off is booked",
+          "description": "The request stays approved and counts towards HR's monthly figures.",
+          "actor": "System",
+          "kind": "end",
+          "files": [
+            { "file": "app/leave/models.py", "contribution": "helper", "label": "models.py: LeaveStatus.APPROVED" }
+          ],
+          "evidence": [{ "path": "app/leave/models.py", "start_line": 19, "end_line": 19, "symbol": "LeaveStatus.APPROVED" }],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/employee-cancels",
+          "name": "Employee cancels booked leave",
+          "description": "The app has a 'cancelled' state, but nothing ever moves a request into it. Cancelling, and giving the days back, is not built.",
+          "actor": "Employee",
+          "kind": "end",
+          "status": "incomplete",
+          "files": [
+            { "file": "app/leave/models.py", "contribution": "helper", "label": "models.py: LeaveStatus.CANCELLED" }
+          ],
+          "evidence": [{ "path": "app/leave/models.py", "start_line": 21, "end_line": 21, "symbol": "LeaveStatus.CANCELLED" }],
+          "provenance": "human"
+        }
+      ],
+      "paths": [
+        { "id": "request-time-off/p-submit-route", "from": "request-time-off/submit", "to": "request-time-off/choose-route", "variants": [], "evidence": [{ "path": "app/leave/service.py", "start_line": 26, "end_line": 26, "symbol": "submit_request" }], "provenance": "human" },
+        { "id": "request-time-off/p-route-direct", "from": "request-time-off/choose-route", "to": "request-time-off/approve-directly", "label": "1 day or less", "variants": ["request-time-off/direct"], "evidence": [{ "path": "app/leave/service.py", "start_line": 15, "end_line": 16, "symbol": "choose_route" }], "provenance": "human" },
+        { "id": "request-time-off/p-route-self", "from": "request-time-off/choose-route", "to": "request-time-off/self-approve", "label": "manager, up to 3 days", "variants": ["request-time-off/self-approval"], "evidence": [{ "path": "app/leave/service.py", "start_line": 17, "end_line": 18, "symbol": "choose_route" }], "provenance": "human" },
+        { "id": "request-time-off/p-route-manager", "from": "request-time-off/choose-route", "to": "request-time-off/notify-manager", "label": "everything else", "variants": ["request-time-off/manager-approval"], "evidence": [{ "path": "app/leave/service.py", "start_line": 19, "end_line": 19, "symbol": "choose_route" }], "provenance": "human" },
+        { "id": "request-time-off/p-notify-review", "from": "request-time-off/notify-manager", "to": "request-time-off/manager-review", "variants": ["request-time-off/manager-approval"], "evidence": [{ "path": "app/leave/routes.py", "start_line": 24, "end_line": 26, "symbol": "approve_leave" }], "provenance": "human" },
+        { "id": "request-time-off/p-review-approved", "from": "request-time-off/manager-review", "to": "request-time-off/deduct-balance", "label": "approved", "variants": ["request-time-off/manager-approval"], "evidence": [{ "path": "app/leave/service.py", "start_line": 50, "end_line": 50, "symbol": "approve_by_manager" }], "provenance": "human" },
+        { "id": "request-time-off/p-review-declined", "from": "request-time-off/manager-review", "to": "request-time-off/request-declined", "label": "declined", "variants": ["request-time-off/manager-approval"], "evidence": [{ "path": "app/leave/service.py", "start_line": 57, "end_line": 57, "symbol": "reject_by_manager" }], "provenance": "human" },
+        { "id": "request-time-off/p-direct-deduct", "from": "request-time-off/approve-directly", "to": "request-time-off/deduct-balance", "variants": ["request-time-off/direct"], "evidence": [{ "path": "app/leave/service.py", "start_line": 41, "end_line": 41, "symbol": "approve_directly" }], "provenance": "human" },
+        { "id": "request-time-off/p-self-deduct", "from": "request-time-off/self-approve", "to": "request-time-off/deduct-balance", "variants": ["request-time-off/self-approval"], "evidence": [{ "path": "app/leave/service.py", "start_line": 45, "end_line": 45, "symbol": "self_approve" }], "provenance": "human" },
+        { "id": "request-time-off/p-deduct-notify", "from": "request-time-off/deduct-balance", "to": "request-time-off/notify-employee", "variants": [], "evidence": [{ "path": "app/leave/service.py", "start_line": 75, "end_line": 77, "symbol": "_approve" }], "provenance": "human" },
+        { "id": "request-time-off/p-notify-booked", "from": "request-time-off/notify-employee", "to": "request-time-off/leave-booked", "variants": [], "evidence": [{ "path": "app/leave/tasks.py", "start_line": 16, "end_line": 21, "symbol": "notify_decision" }], "provenance": "human" },
+        { "id": "request-time-off/p-booked-cancel", "from": "request-time-off/leave-booked", "to": "request-time-off/employee-cancels", "label": "not built", "variants": [], "status": "incomplete", "evidence": [{ "path": "app/leave/models.py", "start_line": 21, "end_line": 21, "symbol": "LeaveStatus.CANCELLED" }], "provenance": "human" }
+      ],
+      "variants": [
+        {
+          "id": "request-time-off/direct",
+          "name": "Automatic approval",
+          "condition": "when the request is for 1 day or less",
+          "route": ["request-time-off/choose-route", "request-time-off/approve-directly", "request-time-off/deduct-balance"],
+          "evidence": [{ "path": "app/leave/service.py", "start_line": 15, "end_line": 16, "symbol": "choose_route" }],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/self-approval",
+          "name": "Self-approval",
+          "condition": "when a manager asks for 3 days or less",
+          "route": ["request-time-off/choose-route", "request-time-off/self-approve", "request-time-off/deduct-balance"],
+          "evidence": [{ "path": "app/leave/service.py", "start_line": 17, "end_line": 18, "symbol": "choose_route" }],
+          "provenance": "human"
+        },
+        {
+          "id": "request-time-off/manager-approval",
+          "name": "Manager approval",
+          "condition": "for every other request",
+          "route": ["request-time-off/choose-route", "request-time-off/notify-manager", "request-time-off/manager-review", "request-time-off/deduct-balance"],
+          "evidence": [{ "path": "app/leave/service.py", "start_line": 19, "end_line": 19, "symbol": "choose_route" }],
+          "provenance": "human"
+        }
+      ],
+      "provenance": "human"
+    },
+    {
+      "id": "monthly-summary",
+      "module": "reports",
+      "name": "Monthly leave summary",
+      "summary": "On the first of each month (or when HR asks), last month's approved leave is totalled per person and emailed to HR.",
+      "actors": ["HR", "System"],
+      "stages": [
+        {
+          "id": "monthly-summary/summary-due",
+          "name": "Monthly summary is due",
+          "description": "Runs automatically at 6am on the 1st of each month. HR can also start it by hand.",
+          "actor": "System",
+          "kind": "start",
+          "files": [
+            { "file": "app/reports/tasks.py", "contribution": "owner", "label": "tasks.py: monthly_summary" },
+            { "file": "app/reports/routes.py", "contribution": "helper", "label": "routes.py: run_monthly_summary" },
+            { "file": "app/shared/auth.py", "contribution": "shared_system", "label": "auth.py: require_hr" }
+          ],
+          "evidence": [
+            { "path": "app/worker.py", "start_line": 8, "end_line": 13 },
+            { "path": "app/reports/routes.py", "start_line": 16, "end_line": 19, "symbol": "run_monthly_summary" }
+          ],
+          "provenance": "human"
+        },
+        {
+          "id": "monthly-summary/count-approved-leave",
+          "name": "Count last month's approved leave",
+          "description": "Adds up the approved days for each person whose leave started last month.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/reports/service.py", "contribution": "owner", "label": "service.py: approved_leave_by_person" },
+            { "file": "app/leave/models.py", "contribution": "helper", "label": "models.py: LeaveRequest" }
+          ],
+          "evidence": [{ "path": "app/reports/service.py", "start_line": 10, "end_line": 19, "symbol": "approved_leave_by_person" }],
+          "provenance": "human"
+        },
+        {
+          "id": "monthly-summary/write-summary",
+          "name": "Write the summary",
+          "description": "Turns the totals into one line per person.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            { "file": "app/reports/service.py", "contribution": "owner", "label": "service.py: format_summary" }
+          ],
+          "evidence": [{ "path": "app/reports/service.py", "start_line": 22, "end_line": 24, "symbol": "format_summary" }],
+          "provenance": "human"
+        },
+        {
+          "id": "monthly-summary/summary-sent",
+          "name": "HR receives the summary",
+          "description": "The summary is emailed to the HR inbox.",
+          "actor": "System",
+          "kind": "end",
+          "files": [
+            { "file": "app/reports/tasks.py", "contribution": "owner", "label": "tasks.py: monthly_summary" },
+            { "file": "app/shared/notifications.py", "contribution": "shared_system", "label": "notifications.py: send_email" }
+          ],
+          "evidence": [{ "path": "app/reports/tasks.py", "start_line": 17, "end_line": 17, "symbol": "monthly_summary" }],
+          "provenance": "human"
+        }
+      ],
+      "paths": [
+        { "id": "monthly-summary/p-due-count", "from": "monthly-summary/summary-due", "to": "monthly-summary/count-approved-leave", "variants": [], "evidence": [{ "path": "app/reports/tasks.py", "start_line": 15, "end_line": 16, "symbol": "monthly_summary" }], "provenance": "human" },
+        { "id": "monthly-summary/p-count-write", "from": "monthly-summary/count-approved-leave", "to": "monthly-summary/write-summary", "variants": [], "evidence": [{ "path": "app/reports/tasks.py", "start_line": 17, "end_line": 17, "symbol": "monthly_summary" }], "provenance": "human" },
+        { "id": "monthly-summary/p-write-sent", "from": "monthly-summary/write-summary", "to": "monthly-summary/summary-sent", "variants": [], "evidence": [{ "path": "app/reports/tasks.py", "start_line": 17, "end_line": 17, "symbol": "monthly_summary" }], "provenance": "human" }
+      ],
+      "variants": [],
+      "provenance": "human"
+    },
+    {
+      "id": "export-leave-data",
+      "module": "reports",
+      "name": "Export leave data",
+      "summary": "HR asks for a spreadsheet of leave for a date range. The screen exists but the export itself is not built yet.",
+      "actors": ["HR"],
+      "stages": [
+        {
+          "id": "export-leave-data/hr-asks",
+          "name": "HR asks for a spreadsheet",
+          "description": "HR picks a date range.",
+          "actor": "HR",
+          "kind": "start",
+          "files": [
+            { "file": "app/reports/routes.py", "contribution": "owner", "label": "routes.py: export" },
+            { "file": "app/shared/auth.py", "contribution": "shared_system", "label": "auth.py: require_hr" }
+          ],
+          "evidence": [{ "path": "app/reports/routes.py", "start_line": 22, "end_line": 24, "symbol": "export" }],
+          "provenance": "human"
+        },
+        {
+          "id": "export-leave-data/build-export",
+          "name": "Build the spreadsheet",
+          "description": "Planned but not built: asking for it currently fails.",
+          "actor": "System",
+          "kind": "end",
+          "status": "incomplete",
+          "files": [
+            { "file": "app/reports/service.py", "contribution": "owner", "label": "service.py: export_csv" }
+          ],
+          "evidence": [{ "path": "app/reports/service.py", "start_line": 27, "end_line": 28, "symbol": "export_csv" }],
+          "provenance": "human"
+        }
+      ],
+      "paths": [
+        { "id": "export-leave-data/p-ask-build", "from": "export-leave-data/hr-asks", "to": "export-leave-data/build-export", "variants": [], "status": "incomplete", "evidence": [{ "path": "app/reports/routes.py", "start_line": 24, "end_line": 24, "symbol": "export" }], "provenance": "human" }
+      ],
+      "variants": [],
+      "provenance": "human"
+    }
+  ],
+  "files": [
+    { "path": ".env.example", "sha256": "93020741b8ec9f7920b6b5a34d3ea45237aaa8172d34f45d9ddf7a28130bd12d", "language": "dotenv", "loc": 3, "layer": "foundation" },
+    { "path": "README.md", "sha256": "ba2d5fc3a0785eafed6357ceaa0a2f9160ccfbd6091e2e306dc2b9b986edfced", "language": "markdown", "loc": 18, "layer": "ignored" },
+    { "path": "app/__init__.py", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "language": "python", "loc": 0, "layer": "foundation" },
+    { "path": "app/core/__init__.py", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "language": "python", "loc": 0, "layer": "foundation" },
+    { "path": "app/core/config.py", "sha256": "bae3fdd313491b54348990153dddc5c5fdc73b5b04cedfd2e2104cd8a6bb9664", "language": "python", "loc": 23, "layer": "foundation" },
+    { "path": "app/core/database.py", "sha256": "1bd0d7ee15d0fb26d8413e9fdd25514480819ec59290373dcfd46e2539583bb4", "language": "python", "loc": 20, "layer": "foundation" },
+    { "path": "app/leave/__init__.py", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "language": "python", "loc": 0, "module": "leave", "layer": "foundation" },
+    { "path": "app/leave/balance.py", "sha256": "32c9c3fa55ab5e16b32fc6cc85f075781741387ceb01208fd130adb69d3efef6", "language": "python", "loc": 11, "module": "leave", "layer": "business" },
+    { "path": "app/leave/models.py", "sha256": "25c527e512e048f33a8159007b367774708af0c28427a1472dadffe9fe9ef5c8", "language": "python", "loc": 50, "module": "leave", "layer": "business" },
+    { "path": "app/leave/routes.py", "sha256": "005f47adacd279ed86f279a6ca8d0dbcf09a89d94aa7d5da2f77f7f7158cd500", "language": "python", "loc": 38, "module": "leave", "layer": "business" },
+    { "path": "app/leave/schemas.py", "sha256": "f812dd98377b90019e36923d607315515d2bbc56ca8d97e2cd625394863498af", "language": "python", "loc": 30, "module": "leave", "layer": "business" },
+    { "path": "app/leave/service.py", "sha256": "111b66bab9846faf4844bd86700547b738b5b0b9ae9f8494f9bc27e5dd32f1e9", "language": "python", "loc": 77, "module": "leave", "layer": "business" },
+    { "path": "app/leave/tasks.py", "sha256": "b3f36a9e4d561280b9d0c7064d5c50e0e4bf1100bd7379726b0468f39840fe35", "language": "python", "loc": 21, "module": "leave", "layer": "business" },
+    { "path": "app/main.py", "sha256": "92d44dac5d904e9c22c89268a41eb75a2c78e91edcae382e622a698aba16751d", "language": "python", "loc": 21, "layer": "foundation" },
+    { "path": "app/reports/__init__.py", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "language": "python", "loc": 0, "module": "reports", "layer": "foundation" },
+    { "path": "app/reports/routes.py", "sha256": "c72c20d41ac4b036430cb3a97645121efb2bd02139df76858bddb3fcb04a4a12", "language": "python", "loc": 24, "module": "reports", "layer": "business" },
+    { "path": "app/reports/service.py", "sha256": "3f97bae90e48f0b99887777e29dadb419ae7db5f1a4b0c99166e5b7e1782814b", "language": "python", "loc": 28, "module": "reports", "layer": "business" },
+    { "path": "app/reports/tasks.py", "sha256": "2684c020201cc20457a904815d6a50d48964d221f8a6e337995bfdede8d3f8fc", "language": "python", "loc": 17, "module": "reports", "layer": "business" },
+    { "path": "app/shared/__init__.py", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "language": "python", "loc": 0, "layer": "foundation" },
+    { "path": "app/shared/audit.py", "sha256": "0681af473b3a179e7759284961bfccb44f9bbb98a42775a6311700d96d61be1b", "language": "python", "loc": 21, "layer": "business" },
+    { "path": "app/shared/auth.py", "sha256": "737d38f1f9cd954493554406536a2ad2a6e23737a0fba21e3e0794177cc54779", "language": "python", "loc": 25, "layer": "business" },
+    { "path": "app/shared/notifications.py", "sha256": "8c6ff4608f14d85eafa85263469f547be9321c21f71ab20523903e7177a60456", "language": "python", "loc": 17, "layer": "business" },
+    { "path": "app/worker.py", "sha256": "9b0a9f5565edc9428375aaade36223deccec7f6816345bae2d7363c94a371394", "language": "python", "loc": 13, "layer": "foundation" },
+    { "path": "requirements.txt", "sha256": "18006b94e7b0328504edec4e69daf4445d85762fe72988da86016115b89f4a1f", "language": "requirements", "loc": 5, "layer": "foundation" }
+  ],
+  "cards": [
+    {
+      "file": "app/leave/routes.py",
+      "role": "The front desk for time off: where requests come in and where managers give their answer.",
+      "stages": ["request-time-off/submit", "request-time-off/manager-review"],
+      "contribution": "owner",
+      "receives": [
+        { "what": "a request for time off", "from_or_to": "the employee" },
+        { "what": "an approve or decline click", "from_or_to": "the manager" }
+      ],
+      "hands_off": [{ "what": "the request and who is asking", "from_or_to": "app/leave/service.py" }],
+      "if_removed": "Nobody can ask for time off or approve it; the app has no way in for the leave module.",
+      "evidence": [{ "path": "app/leave/routes.py", "start_line": 11, "end_line": 38 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/leave/service.py",
+      "role": "The rulebook: decides who must approve, applies approvals and refusals, and kicks off emails.",
+      "stages": ["request-time-off/submit", "request-time-off/choose-route", "request-time-off/approve-directly", "request-time-off/self-approve", "request-time-off/notify-manager", "request-time-off/manager-review", "request-time-off/request-declined", "request-time-off/deduct-balance"],
+      "contribution": "owner",
+      "receives": [{ "what": "a request plus the person asking or deciding", "from_or_to": "app/leave/routes.py" }],
+      "hands_off": [
+        { "what": "days to take off the balance", "from_or_to": "app/leave/balance.py" },
+        { "what": "email jobs", "from_or_to": "app/leave/tasks.py" },
+        { "what": "who did what", "from_or_to": "app/shared/audit.py" }
+      ],
+      "if_removed": "Requests can't be routed, approved or declined; every leave action fails.",
+      "evidence": [{ "path": "app/leave/service.py", "start_line": 13, "end_line": 77 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/leave/balance.py",
+      "role": "Keeps each person's remaining days: checks there are enough and takes approved days off.",
+      "stages": ["request-time-off/submit", "request-time-off/deduct-balance"],
+      "contribution": "owner",
+      "receives": [{ "what": "a person and a number of days", "from_or_to": "app/leave/service.py" }],
+      "hands_off": [{ "what": "an updated balance", "from_or_to": "app/leave/models.py" }],
+      "if_removed": "People could book more days than they have, and approved leave would never be subtracted.",
+      "evidence": [{ "path": "app/leave/balance.py", "start_line": 5, "end_line": 11 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/leave/tasks.py",
+      "role": "Sends the 'please review' and 'here's the decision' emails in the background.",
+      "stages": ["request-time-off/notify-manager", "request-time-off/notify-employee", "request-time-off/request-declined"],
+      "contribution": "owner",
+      "receives": [{ "what": "a request number", "from_or_to": "app/leave/service.py" }],
+      "hands_off": [{ "what": "an email to write and send", "from_or_to": "app/shared/notifications.py" }],
+      "if_removed": "Managers never hear about requests waiting for them, and employees never hear the outcome.",
+      "evidence": [{ "path": "app/leave/tasks.py", "start_line": 8, "end_line": 21 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/leave/models.py",
+      "role": "Describes what is stored: people, their roles and balances, and each leave request with its status.",
+      "stages": ["request-time-off/deduct-balance", "request-time-off/leave-booked", "request-time-off/employee-cancels", "monthly-summary/count-approved-leave"],
+      "contribution": "helper",
+      "receives": [{ "what": "changes to people and requests", "from_or_to": "app/leave/service.py" }],
+      "hands_off": [{ "what": "stored people and requests", "from_or_to": "the database" }],
+      "if_removed": "Nothing about people or leave can be saved or read; every module stops.",
+      "evidence": [{ "path": "app/leave/models.py", "start_line": 11, "end_line": 50 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/leave/schemas.py",
+      "role": "Checks the shape of a leave request coming in and decides what is shown back.",
+      "stages": ["request-time-off/submit"],
+      "contribution": "helper",
+      "receives": [{ "what": "the raw request form", "from_or_to": "the employee" }],
+      "hands_off": [{ "what": "a checked request (end date not before start)", "from_or_to": "app/leave/routes.py" }],
+      "if_removed": "Bad dates get through and the API can't describe what it returns.",
+      "evidence": [{ "path": "app/leave/schemas.py", "start_line": 9, "end_line": 30 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/reports/routes.py",
+      "role": "HR's doors into reporting: run the monthly summary now, or ask for an export.",
+      "stages": ["monthly-summary/summary-due", "export-leave-data/hr-asks"],
+      "contribution": "owner",
+      "receives": [{ "what": "a request from HR", "from_or_to": "HR" }],
+      "hands_off": [
+        { "what": "a 'run the summary' job", "from_or_to": "app/reports/tasks.py" },
+        { "what": "a date range to export", "from_or_to": "app/reports/service.py" }
+      ],
+      "if_removed": "HR can't trigger the summary by hand or ask for an export; the scheduled summary still runs.",
+      "evidence": [{ "path": "app/reports/routes.py", "start_line": 13, "end_line": 24 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/reports/service.py",
+      "role": "Adds up approved leave per person and writes it as a summary; the export is still a placeholder.",
+      "stages": ["monthly-summary/count-approved-leave", "monthly-summary/write-summary", "export-leave-data/build-export"],
+      "contribution": "owner",
+      "receives": [{ "what": "a month to report on", "from_or_to": "app/reports/tasks.py" }],
+      "hands_off": [{ "what": "summary text", "from_or_to": "app/reports/tasks.py" }],
+      "if_removed": "The monthly summary has no figures to send.",
+      "evidence": [{ "path": "app/reports/service.py", "start_line": 10, "end_line": 28 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/reports/tasks.py",
+      "role": "The monthly job: works out last month, gets the summary and emails it to HR.",
+      "stages": ["monthly-summary/summary-due", "monthly-summary/summary-sent"],
+      "contribution": "owner",
+      "receives": [{ "what": "the monthly schedule or HR's manual trigger", "from_or_to": "app/worker.py" }],
+      "hands_off": [{ "what": "the summary email", "from_or_to": "app/shared/notifications.py" }],
+      "if_removed": "HR stops getting the monthly summary.",
+      "evidence": [{ "path": "app/reports/tasks.py", "start_line": 11, "end_line": 17 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/shared/auth.py",
+      "role": "Works out who is calling and blocks anyone without the right role.",
+      "stages": ["request-time-off/submit", "request-time-off/manager-review", "monthly-summary/summary-due", "export-leave-data/hr-asks"],
+      "contribution": "shared_system",
+      "receives": [{ "what": "the caller's employee number", "from_or_to": "every request" }],
+      "hands_off": [{ "what": "the signed-in employee, or a refusal", "from_or_to": "app/leave/routes.py" }],
+      "if_removed": "No screen knows who is asking; every request fails, or anyone could approve anything.",
+      "evidence": [{ "path": "app/shared/auth.py", "start_line": 9, "end_line": 25 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/shared/notifications.py",
+      "role": "The app's one way to send email.",
+      "stages": ["request-time-off/notify-manager", "request-time-off/notify-employee", "monthly-summary/summary-sent"],
+      "contribution": "shared_system",
+      "receives": [{ "what": "who, subject and message", "from_or_to": "app/leave/tasks.py" }],
+      "hands_off": [{ "what": "an email", "from_or_to": "the mail server" }],
+      "if_removed": "No emails go out anywhere: managers, employees and HR all stop hearing from the app.",
+      "evidence": [{ "path": "app/shared/notifications.py", "start_line": 8, "end_line": 17 }],
+      "provenance": "human"
+    },
+    {
+      "file": "app/shared/audit.py",
+      "role": "Keeps a permanent log of who submitted, approved or declined what.",
+      "stages": ["request-time-off/submit", "request-time-off/deduct-balance", "request-time-off/request-declined"],
+      "contribution": "shared_system",
+      "receives": [{ "what": "who did what to which request", "from_or_to": "app/leave/service.py" }],
+      "hands_off": [{ "what": "a log entry", "from_or_to": "the database" }],
+      "if_removed": "Leave still works, but there is no record of who approved or declined anything.",
+      "evidence": [{ "path": "app/shared/audit.py", "start_line": 10, "end_line": 21 }],
+      "provenance": "human"
+    }
+  ],
+  "shared_systems": [
+    {
+      "id": "email",
+      "name": "Email",
+      "description": "Sends every email the app produces.",
+      "files": ["app/shared/notifications.py"],
+      "used_by_stages": ["request-time-off/notify-manager", "request-time-off/notify-employee", "monthly-summary/summary-sent"],
+      "evidence": [{ "path": "app/shared/notifications.py", "start_line": 8, "end_line": 17, "symbol": "send_email" }],
+      "provenance": "human"
+    },
+    {
+      "id": "audit-log",
+      "name": "Audit log",
+      "description": "Permanent record of leave decisions.",
+      "files": ["app/shared/audit.py"],
+      "used_by_stages": ["request-time-off/submit", "request-time-off/deduct-balance", "request-time-off/request-declined"],
+      "evidence": [{ "path": "app/shared/audit.py", "start_line": 20, "end_line": 21, "symbol": "record" }],
+      "provenance": "human"
+    },
+    {
+      "id": "sign-in-and-roles",
+      "name": "Sign-in and roles",
+      "description": "Identifies the caller and checks they are an employee, manager or HR as required.",
+      "files": ["app/shared/auth.py"],
+      "used_by_stages": ["request-time-off/submit", "request-time-off/manager-review", "monthly-summary/summary-due", "export-leave-data/hr-asks"],
+      "evidence": [{ "path": "app/shared/auth.py", "start_line": 9, "end_line": 25 }],
+      "provenance": "human"
+    }
+  ],
+  "foundation": [
+    { "group": "configuration", "label": "Settings", "files": ["app/core/config.py"] },
+    { "group": "secrets_loading", "label": "Environment file", "files": [".env.example"] },
+    { "group": "database_setup", "label": "Database connection", "files": ["app/core/database.py"] },
+    { "group": "dependencies", "label": "Libraries", "files": ["requirements.txt"] },
+    { "group": "wiring", "label": "App and worker start-up", "files": ["app/main.py", "app/worker.py", "app/__init__.py", "app/core/__init__.py", "app/leave/__init__.py", "app/reports/__init__.py", "app/shared/__init__.py"] }
+  ],
+  "flags": [
+    {
+      "id": "cancel-never-happens",
+      "kind": "missing_transition",
+      "message": "Requests have a 'cancelled' state but nothing ever sets it, so booked leave can't be cancelled.",
+      "target": { "type": "stage", "id": "request-time-off/employee-cancels" },
+      "evidence": [{ "path": "app/leave/models.py", "start_line": 21, "end_line": 21, "symbol": "LeaveStatus.CANCELLED" }]
+    },
+    {
+      "id": "export-not-built",
+      "kind": "not_implemented",
+      "message": "Spreadsheet export is a placeholder that always fails.",
+      "target": { "type": "stage", "id": "export-leave-data/build-export" },
+      "evidence": [{ "path": "app/reports/service.py", "start_line": 27, "end_line": 28, "symbol": "export_csv" }]
+    },
+    {
+      "id": "carry-over-todo",
+      "kind": "todo",
+      "message": "Unused days are lost at year end; carrying them over is still a to-do.",
+      "target": { "type": "file", "id": "app/leave/balance.py" },
+      "evidence": [{ "path": "app/leave/balance.py", "start_line": 10, "end_line": 10, "symbol": "deduct" }]
+    }
+  ]
+}

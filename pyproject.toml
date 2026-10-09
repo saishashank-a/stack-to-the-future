@@ -1,0 +1,13 @@
+[project]
+name = "stack-to-the-future"
+version = "0.1.0"
+description = "Claude Code plugin that turns any codebase into an anatomy atlas."
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "jsonschema>=4.23"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

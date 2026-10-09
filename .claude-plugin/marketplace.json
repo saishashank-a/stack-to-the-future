@@ -1,0 +1,14 @@
+{
+  "name": "stack-to-the-future",
+  "description": "Stack to the Future: codebase anatomy atlases for Claude Code.",
+  "owner": {
+    "name": "Sai Shashank Anchuri"
+  },
+  "plugins": [
+    {
+      "name": "stack-to-the-future",
+      "source": "./",
+      "description": "Turn any codebase into an anatomy atlas of business workflows."
+    }
+  ]
+}

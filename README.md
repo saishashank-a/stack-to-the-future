@@ -11,7 +11,24 @@ The atlas is one business-level workflow diagram per module. The code appears on
 - **Foundation layer:** plumbing (config, DB setup, imports, secrets loading) shown faded underneath.
 - **Incomplete code:** stubs and TODOs drawn dotted.
 
-Status: planning. See [PLAN.md](PLAN.md).
+Status: milestone (a) of 7. The atlas schema and a hand-written sample atlas exist; the scanner does not yet. See [PLAN.md](PLAN.md).
+
+## Try the sample
+
+[`examples/leave-desk.atlas.json`](examples/leave-desk.atlas.json) is a hand-written atlas of [`fixtures/leave-desk`](fixtures/leave-desk), a small time-off app built for testing. It shows three approval routes branching and merging on one diagram, two modules, shared systems, the foundation layer and three flags for unfinished code.
+
+```sh
+uv run pytest        # schema, citations, branch merging, no leaked secrets
+```
+
+## Install (once it does something)
+
+```
+/plugin marketplace add saishashank-a/stack-to-the-future
+/plugin install stack-to-the-future
+```
+
+Requires [uv](https://docs.astral.sh/uv/).
 
 ## License
 
