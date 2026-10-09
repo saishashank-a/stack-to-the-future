@@ -9,7 +9,7 @@ import atlas
 from walkthrough import check, context
 
 ROOT = Path(__file__).resolve().parents[1]
-WALKTHROUGH = (ROOT / "tests" / "data" / "walkthrough-leave-service.md").read_text()
+WALKTHROUGH = (ROOT / "tests" / "data" / "walkthrough-leave-service.md").read_text(encoding="utf-8")
 FAKE_SECRET = "FAKE-smtp-pass-9f8a7b6c5d4e3f2a1b0c"
 
 
@@ -24,7 +24,7 @@ def repo(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def scan(repo):
-    return json.loads((repo / ".atlas" / "scan.json").read_text())
+    return json.loads((repo / ".atlas" / "scan.json").read_text(encoding="utf-8"))
 
 
 def test_context_has_card_stages_links_facts_and_source(repo):
@@ -67,7 +67,7 @@ def test_dishonest_walkthroughs_are_rejected(scan, change, rule):
 def test_cli_exit_codes(repo, tmp_path):
     atlas.main(["check-walkthrough", str(ROOT / "tests" / "data" / "walkthrough-leave-service.md"), "--root", str(repo)])
     bad = tmp_path / "bad.md"
-    bad.write_text(WALKTHROUGH.replace("13-19 choose_route", "13-19 pick_route"))
+    bad.write_text(WALKTHROUGH.replace("13-19 choose_route", "13-19 pick_route"), encoding="utf-8")
     with pytest.raises(SystemExit) as e:
         atlas.main(["check-walkthrough", str(bad), "--root", str(repo)])
     assert e.value.code == 1

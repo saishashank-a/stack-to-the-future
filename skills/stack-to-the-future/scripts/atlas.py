@@ -22,10 +22,10 @@ def cmd_scan(args) -> None:
     out = root / ".atlas"
     out.mkdir(exist_ok=True)
     if not (out / ".gitignore").exists():
-        (out / ".gitignore").write_text(ATLAS_GITIGNORE)
+        (out / ".gitignore").write_text(ATLAS_GITIGNORE, encoding="utf-8", newline="\n")
     result = scan.scan(root, out / "cache")
     result["clusters"] = cluster.cluster(result, args.draft_limit)
-    (out / "scan.json").write_text(json.dumps(result, indent=2) + "\n")
+    (out / "scan.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     c = result["clusters"]
     kinds = {}
@@ -48,7 +48,7 @@ def cmd_validate(args) -> None:
     scan_path = root / ".atlas" / "scan.json"
     if not scan_path.exists():
         sys.exit(f"No {scan_path}; run `atlas.py scan {root}` first.")
-    errors = validate.validate(json.loads(Path(args.draft).read_text()), json.loads(scan_path.read_text()))
+    errors = validate.validate(json.loads(Path(args.draft).read_text(encoding="utf-8")), json.loads(scan_path.read_text(encoding="utf-8")))
     print(validate.report(errors))
     if errors:
         sys.exit(1)
@@ -87,7 +87,7 @@ def cmd_check_walkthrough(args) -> None:
     scan_path = root / ".atlas" / "scan.json"
     if not scan_path.exists():
         sys.exit(f"No {scan_path}; run `atlas.py scan {root}` first.")
-    errors = walkthrough.check(Path(args.walkthrough).read_text(), json.loads(scan_path.read_text()))
+    errors = walkthrough.check(Path(args.walkthrough).read_text(encoding="utf-8"), json.loads(scan_path.read_text(encoding="utf-8")))
     print(validate.report(errors))
     if errors:
         sys.exit(1)
@@ -96,7 +96,7 @@ def cmd_check_walkthrough(args) -> None:
 def _load(path: Path, hint: str) -> dict:
     if not path.exists():
         sys.exit(f"No {path}; {hint}")
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def cmd_merge(args) -> None:
@@ -105,17 +105,17 @@ def cmd_merge(args) -> None:
 
     atlas_dir = Path(args.root).resolve() / ".atlas"
     scan_ = _load(atlas_dir / "scan.json", "run `atlas.py scan` first.")
-    previous = json.loads((atlas_dir / "atlas.json").read_text()) if (atlas_dir / "atlas.json").exists() else None
+    previous = json.loads((atlas_dir / "atlas.json").read_text(encoding="utf-8")) if (atlas_dir / "atlas.json").exists() else None
     merged = checkpoint.merge(previous, _load(Path(args.draft), "nothing to merge."), scan_)
     if not args.approve:
-        (atlas_dir / "draft.json").write_text(json.dumps(merged, indent=2) + "\n")
+        (atlas_dir / "draft.json").write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(checkpoint.outline(merged))
         return
     errors = validate.validate(merged, scan_)
     if errors:
         print(validate.report(errors))
         sys.exit(1)
-    (atlas_dir / "atlas.json").write_text(json.dumps(merged, indent=2) + "\n")
+    (atlas_dir / "atlas.json").write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"Approved -> {atlas_dir / 'atlas.json'}")
 
 
@@ -153,7 +153,7 @@ def cmd_render(args) -> None:
     out.mkdir(exist_ok=True)
     rendered = {f: renderers[f](data) for f in formats}  # all or nothing: any secret hit raises before a file is written
     for fmt, text in rendered.items():
-        (out / f"atlas.{fmt}").write_text(text)
+        (out / f"atlas.{fmt}").write_text(text, encoding="utf-8", newline="\n")
         print(f"Wrote {out / f'atlas.{fmt}'}")
 
 

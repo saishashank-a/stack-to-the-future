@@ -7,13 +7,13 @@ import jsonschema
 from scan import scan
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text())
+SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text(encoding="utf-8"))
 
 
 def repo(tmp_path, files: dict[str, str]) -> dict:
     for path, body in files.items():
         (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / path).write_text(body)
+        (tmp_path / path).write_text(body, encoding="utf-8")
     result = scan(tmp_path)
     jsonschema.validate(result, SCHEMA)
     return result

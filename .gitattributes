@@ -1,0 +1,3 @@
+# Keep LF everywhere: fixtures are hashed and golden files compared byte for byte,
+# so a CRLF checkout (core.autocrlf on Windows) would break them.
+* text=auto eol=lf

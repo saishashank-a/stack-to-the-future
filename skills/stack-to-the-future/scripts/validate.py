@@ -12,13 +12,13 @@ import jsonschema
 from redact import redact
 
 SKILL = Path(__file__).resolve().parent.parent
-SCHEMA = json.loads((SKILL / "schema" / "atlas.schema.json").read_text())
+SCHEMA = json.loads((SKILL / "schema" / "atlas.schema.json").read_text(encoding="utf-8"))
 CODE_LIKE = re.compile(r"\w+\.(?:py|tsx?|jsx?|json|toml|ya?ml)\b|\b[a-z]+_\w+|\b[a-z]+[A-Z]\w*|\w\(|::")
 
 
 def banned_words() -> list[str]:
     """The banned-word list lives in references/plain-language.md; read it from there so there is one copy."""
-    text = (SKILL / "references" / "plain-language.md").read_text()
+    text = (SKILL / "references" / "plain-language.md").read_text(encoding="utf-8")
     m = re.search(r"\*\*Banned words[^*]*\*\*\s*(.+)", text)
     return [w.strip(" .") for w in m.group(1).split(",") if w.strip(" .")]
 
