@@ -11,25 +11,40 @@ The atlas is one business-level workflow diagram per module. The code appears on
 - **Foundation layer:** plumbing (config, DB setup, imports, secrets loading) shown faded underneath.
 - **Incomplete code:** stubs and TODOs drawn dotted.
 
-Status: milestone (b) of 7. The static scanner works; naming stages, file cards and diagrams come next. See [PLAN.md](PLAN.md).
+Status: all seven planned milestones are built. Next up: real-world testing.
 
-## Try the sample
+## See a sample
 
-[`examples/leave-desk.atlas.json`](examples/leave-desk.atlas.json) is a hand-written atlas of [`fixtures/leave-desk`](fixtures/leave-desk), a small time-off app built for testing. It shows three approval routes branching and merging on one diagram, two modules, shared systems, the foundation layer and three flags for unfinished code.
+Open [`examples/out/leave-desk.atlas.html`](examples/out/leave-desk.atlas.html) in a browser (works offline). It is the atlas of [`fixtures/leave-desk`](fixtures/leave-desk), a small time-off app built for testing: three approval routes branching and merging on one diagram, two modules, shared systems, the faded foundation layer and dotted unfinished work. The same atlas is also exported as [Excalidraw](examples/out/leave-desk.atlas.excalidraw) and [`.lal`](examples/out/leave-desk.atlas.lal) ([format](skills/stack-to-the-future/references/lal-format.md)).
 
-```sh
-uv run pytest                                                          # all checks
-uv run --script skills/stack-to-the-future/scripts/atlas.py scan fixtures/leave-desk   # writes fixtures/leave-desk/.atlas/scan.json
-```
-
-## Install (once it does something)
+## Install
 
 ```
 /plugin marketplace add saishashank-a/stack-to-the-future
 /plugin install stack-to-the-future
 ```
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires [uv](https://docs.astral.sh/uv/). Then ask Claude to "map this codebase" or run `/stack-to-the-future`.
+
+## What Claude runs
+
+All scripts are deterministic; Claude only does the naming and writing. Nothing leaves your machine, and secret values never reach any output.
+
+| Command | Does |
+|---|---|
+| `atlas.py scan <root>` | tree-sitter scan + framework adapters + clustering → `.atlas/scan.json` (cached per file hash) |
+| `atlas.py excerpt <path> <start> <end>` | redacted, line-numbered source for drafting |
+| `atlas.py validate <draft>` | rejects any claim that cites code the scan didn't find, unmerged branches, jargon, leaks |
+| `atlas.py merge <draft> [--approve]` | folds in your locked corrections; prints the checkpoint outline |
+| `atlas.py outline` / `stale` | the outline to review; what changed since you approved |
+| `atlas.py render [--format lal,excalidraw,html]` | `.atlas/out/` diagrams |
+| `atlas.py walkthrough-context <file>` / `check-walkthrough <md>` | on-demand step-by-step walkthrough of one file |
+
+## Develop
+
+```sh
+uv run pytest
+```
 
 ## License
 

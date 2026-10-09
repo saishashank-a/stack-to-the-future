@@ -7,7 +7,7 @@ description: Map a codebase into an "anatomy atlas" - plain-language business wo
 
 > Where we're going, we don't need docs.
 
-**Status: milestone (d).** Scan, draft, validate, the human checkpoint and re-runs work. Rendering is not built yet.
+**Status: all milestones (a)–(g) built.** Scan, draft, validate, human checkpoint, re-runs, rendering and walkthroughs work.
 
 `ATLAS` below means `uv run --script <skill-base-dir>/scripts/atlas.py`, using `scripts/atlas.py` from this skill's base directory. `<root>` is the repository (the user's path, default the current directory).
 
@@ -24,7 +24,8 @@ description: Map a codebase into an "anatomy atlas" - plain-language business wo
 8. **Approve.** `ATLAS merge <root>/.atlas/draft.json --root <root> --approve` validates and writes `.atlas/atlas.json`. If it reports `stale_override` flags, tell the user which of their corrections now describe code that changed and ask whether to keep, update or drop each one.
 9. **Re-run.** When `atlas.json` already exists: scan (step 2), then `ATLAS stale --root <root>`. If it says nothing changed, stop. Otherwise copy `atlas.json` to `draft.json`, replace its `files[]` with the scan's, and re-draft **only** the items under "Re-draft"; leave everything else as it is. Items under "Needs human review" are the user's locked corrections: show them to the user and ask, never edit them yourself. Then validate (step 5) and continue from step 6.
 
-Diagrams are not built yet (PLAN.md section 3, step 8 onward); after approval tell the user `atlas.json` is ready and rendering comes in a later milestone.
+10. **Render.** `ATLAS render --root <root>` (default formats `lal,excalidraw,html`; pass `--format html` to limit). It writes `.atlas/out/atlas.{html,excalidraw,lal}` and refuses to write anything if a secret value would appear.
+11. **Report.** Give the user the output paths (open `atlas.html` first: it works offline), the number of flags with the top few in plain words, and that they can ask "walk me through <file>" for any file.
 
 ## Reading scan.json
 
@@ -32,7 +33,7 @@ Diagrams are not built yet (PLAN.md section 3, step 8 onward); after approval te
 - `symbols`: every function, method, class and assignment with its lines. Evidence `symbol` values must come from here.
 - `clusters.modules`: one per top-level package or app folder, with a suggested `role`.
 - `clusters.workflows`: skeletons to name in business language; merge or split as the code demands.
-- Framework-specific wiring (router prefixes, `Depends`, Celery tasks sent by name) is not resolved until the adapters milestone; read the excerpt when a link looks missing.
+- Framework adapters (FastAPI, Celery, SQLAlchemy, Next.js App Router) already resolve router prefixes, `Depends`, tasks sent by name and schedules. For anything else dynamic, read the excerpt when a link looks missing.
 
 ## Walkthroughs (on demand)
 

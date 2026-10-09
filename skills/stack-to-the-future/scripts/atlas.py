@@ -139,6 +139,24 @@ def cmd_outline(args) -> None:
     print(checkpoint.outline(_load(atlas_dir / ("draft.json" if args.draft else "atlas.json"), "nothing to outline yet.")))
 
 
+def cmd_render(args) -> None:
+    from render import excalidraw, html, lal
+
+    renderers = {"html": html.render, "excalidraw": excalidraw.render, "lal": lal.render}
+    formats = [f.strip() for f in args.format.split(",") if f.strip()]
+    unknown = set(formats) - set(renderers)
+    if unknown:
+        raise SystemExit(f"unknown format(s): {', '.join(sorted(unknown))}; choose from {', '.join(renderers)}")
+    atlas_dir = Path(args.root).resolve() / ".atlas"
+    data = _load(atlas_dir / "atlas.json", "approve an atlas first: `atlas.py merge <draft> --approve`.")
+    out = atlas_dir / "out"
+    out.mkdir(exist_ok=True)
+    rendered = {f: renderers[f](data) for f in formats}  # all or nothing: any secret hit raises before a file is written
+    for fmt, text in rendered.items():
+        (out / f"atlas.{fmt}").write_text(text)
+        print(f"Wrote {out / f'atlas.{fmt}'}")
+
+
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(prog="atlas.py", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -176,6 +194,10 @@ def main(argv=None) -> None:
     p.add_argument("--root", default=".")
     p.add_argument("--draft", action="store_true")
     p.set_defaults(func=cmd_outline)
+    p = sub.add_parser("render", help="draw .atlas/atlas.json into .atlas/out/atlas.{html,excalidraw,lal}")
+    p.add_argument("--root", default=".")
+    p.add_argument("--format", default="lal,excalidraw,html", help="comma-separated: lal, excalidraw, html")
+    p.set_defaults(func=cmd_render)
     args = parser.parse_args(argv)
     args.func(args)
 
