@@ -9,6 +9,11 @@ from redact import read_redacted, redact
 # `app/leave/service.py:13-19` or `app/leave/service.py:13-19 choose_route` (single line: `path:13`)
 CITATION = re.compile(r"`(?P<path>[\w./-]+\.\w+):(?P<start>\d+)(?:-(?P<end>\d+))?(?:\s+(?P<symbol>[\w.]+))?`")
 HEADING = re.compile(r"^(#{1,3})\s+(.*)$")
+SOURCE_HASH = re.compile(r"<!-- source sha256: (?P<sha>[0-9a-f]{64}) -->")
+
+
+def footer(sha: str) -> str:
+    return f"<!-- source sha256: {sha} -->"
 
 
 def context(root: Path, path: str) -> str:
@@ -19,6 +24,10 @@ def context(root: Path, path: str) -> str:
     atlas_path = root / ".atlas" / "atlas.json"
     atlas = json.loads(atlas_path.read_text(encoding="utf-8")) if atlas_path.exists() else None
     out = [f"# Walkthrough context: {path}", ""]
+    sha = next((f["sha256"] for f in scan["files"] if f["path"] == path), None)
+    if sha:
+        out += ["End the walkthrough with this line, unchanged, so a later re-scan can tell when it goes stale:",
+                footer(sha), ""]
 
     out.append("## Card")
     card = next((c for c in atlas["cards"] if c["file"] == path), None) if atlas else None
@@ -97,6 +106,34 @@ def check(markdown: str, scan: dict) -> list[dict]:
         if not s["cited"]:
             errors.append({"where": f"line {s['line']}", "rule": "steps", "message": f"step '{s['title']}' cites no lines"})
 
+    title = next((h[2].strip("` ") for t in markdown.splitlines() if (h := HEADING.match(t)) and len(h[1]) == 1), None)
+    written = SOURCE_HASH.search(markdown)
+    if written and title in scan_files and written["sha"] != scan_files[title]["sha256"]:
+        errors.append({"where": "document", "rule": "stale",
+                       "message": f"{title} changed since this walkthrough was written; rewrite it from fresh context"})
+
     if redact(markdown)[1]:
         errors.append({"where": "document", "rule": "secret", "message": "contains what looks like a secret value; remove it"})
     return errors
+
+
+def stale(root: Path, scan: dict, atlas: dict | None = None) -> list[str]:
+    """Walkthroughs under .atlas/walkthroughs/ that no longer match the code: the walked file is gone or changed since
+    the walkthrough was written (its footer hash, else the approved atlas's hash), or a citation stopped resolving."""
+    folder = Path(root) / ".atlas" / "walkthroughs"
+    now = {f["path"]: f["sha256"] for f in scan["files"]}
+    approved = {f["path"]: f["sha256"] for f in atlas["files"]} if atlas else {}
+    out = []
+    for md in sorted(folder.rglob("*.md")) if folder.exists() else []:
+        path = md.relative_to(folder).as_posix()[:-len(".md")]
+        text = md.read_text(encoding="utf-8")
+        written = SOURCE_HASH.search(text)
+        written_against = written["sha"] if written else approved.get(path)
+        label = f"walkthrough {path}"
+        if path not in now:
+            out.append(f"{label}: file deleted")
+        elif written_against and written_against != now[path]:
+            out.append(f"{label}: file changed since it was written")
+        elif broken := [e for e in check(text, scan) if e["rule"] in ("evidence", "symbol")]:
+            out.append(f"{label}: {len(broken)} citation(s) no longer resolve, first: {broken[0]['message']}")
+    return out

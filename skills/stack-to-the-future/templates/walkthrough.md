@@ -8,6 +8,7 @@ Write `<root>/.atlas/walkthroughs/<path>.md` (e.g. `.atlas/walkthroughs/app/leav
 - **Cite every claim.** A citation is a backticked `path:start-end`, optionally followed by a space and the symbol: `` `app/leave/service.py:13-19 choose_route` ``. A single line is `` `path:42` ``. Cite only lines shown in the context's source; the symbol must be one listed under "Symbols" and its lines must overlap the cited range.
 - **Reading order.** Steps follow the file from top to bottom, one step per meaningful block (usually one function or one branch). Skip imports unless they say something about the design.
 - **Every step cites at least one range.** `atlas.py check-walkthrough` rejects a step without one.
+- **End with the source hash line** the context gives, unchanged. `atlas.py stale` uses it to list walkthroughs whose file has changed since, and `check-walkthrough` rejects one that is out of date.
 - **No secret values.** The source you see is already redacted; never reconstruct or guess what was redacted.
 - **Use the card.** "What this file is for", "Where it hands off" and "What breaks if it's gone" start from the card and stages in the context; correct them only if the source clearly says otherwise, and say so.
 
@@ -43,4 +44,6 @@ Write `<root>/.atlas/walkthroughs/<path>.md` (e.g. `.atlas/walkthroughs/app/leav
 ## Open issues
 
 - <each flag, TODO, stub or missing step that touches this file, with its citation; "None found." if there are none>
+
+<!-- source sha256: <the hash line from the context, copied unchanged> -->
 ```

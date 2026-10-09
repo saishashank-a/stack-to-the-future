@@ -123,11 +123,16 @@ def cmd_stale(args) -> None:
     import checkpoint
 
     atlas_dir = Path(args.root).resolve() / ".atlas"
-    redraft, review = checkpoint.stale(_load(atlas_dir / "atlas.json", "no approved atlas yet; draft one first."),
-                                       _load(atlas_dir / "scan.json", "run `atlas.py scan` first."))
-    if not redraft and not review:
+    import walkthrough
+
+    atlas = _load(atlas_dir / "atlas.json", "no approved atlas yet; draft one first.")
+    scan_ = _load(atlas_dir / "scan.json", "run `atlas.py scan` first.")
+    redraft, review = checkpoint.stale(atlas, scan_)
+    rewrite = walkthrough.stale(atlas_dir.parent, scan_, atlas)
+    if not redraft and not review and not rewrite:
         print("Nothing changed since the atlas was approved.")
-    for title, items in ((f"Re-draft ({len(redraft)}):", redraft), (f"Needs human review, locked by you ({len(review)}):", review)):
+    for title, items in ((f"Re-draft ({len(redraft)}):", redraft), (f"Needs human review, locked by you ({len(review)}):", review),
+                         (f"Rewrite walkthroughs ({len(rewrite)}):", rewrite)):
         if items:
             print(title, *(f"  - {i}" for i in items), sep="\n")
 
