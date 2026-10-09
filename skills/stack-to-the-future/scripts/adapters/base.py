@@ -12,7 +12,7 @@ class Adapter(Protocol):
         """Return any of:
         calls: [{file, caller, line, target_file, target_symbol}]  extra resolved call edges
         entry_points: [scan entry point]                           new entry points (deduped by id)
-        relabel: {entry_point_id: {label, path}}                   fix labels in place
+        relabel: {entry_point_id: {label, path, also_at?}}         fix labels in place; also_at = other mount paths
         permission_branches: [{file, function, line, test}]
         status_columns: [{file, model, field, line, enum_file, enum}]
         hints: {path: {hint, group}}                               override a file's layer hint

@@ -107,14 +107,13 @@ class FastAPIAdapter:
             if (parent := project.resolve(path, p_expr)) in routers and (child := project.resolve(path, c_expr)) in routers)
 
         def chain(key, seen=()):
-            """(prefix, [(file, expr)] dependencies) accumulated from the app down to this router."""
+            """Every mount of this router: [(prefix, [(file, expr)] dependencies)] accumulated from the app down."""
             own = routers[key]
             parents = [i for i in resolved_includes if i[1] == key and i[0] not in seen]
-            if not parents:  # ponytail: a router mounted twice keeps its first mount only
-                return own["prefix"], own["deps"]
-            parent, _, prefix, deps = parents[0]
-            p_prefix, p_deps = chain(parent, (*seen, key))
-            return p_prefix + prefix + own["prefix"], p_deps + deps + own["deps"]
+            if not parents:
+                return [(own["prefix"], own["deps"])]
+            return [(p_prefix + prefix + own["prefix"], p_deps + deps + own["deps"])
+                    for parent, _, prefix, deps in parents for p_prefix, p_deps in chain(parent, (*seen, key))]
 
         facts = {"calls": [], "entry_points": [], "relabel": {}, "permission_branches": [], "hints": {}}
         for (path, qual), _ in fn_deps.items():
@@ -124,9 +123,12 @@ class FastAPIAdapter:
             if ep["kind"] != "api_route" or not ep.get("router"):
                 continue
             key = project.resolve(ep["file"], ep["router"])
-            prefix, router_deps = chain(key) if key in routers else ("", [])
-            full = prefix + ep["path"]
+            mounts = chain(key) if key in routers else [("", [])]
+            full, *also = sorted({prefix + ep["path"] for prefix, _ in mounts})
             facts["relabel"][ep["id"]] = {"label": f"{ep['label'].split(' ', 1)[0]} {full or '/'}", "path": full}
+            if also:
+                facts["relabel"][ep["id"]]["also_at"] = [p or "/" for p in also]
+            router_deps = list(dict.fromkeys(d for _, deps in mounts for d in deps))  # a guard on any mount counts
             inherited = [(t, e, ep["start_line"]) for f, e in router_deps if (t := callable_target(f, e))]
             facts["calls"] += [edge(ep["file"], ep["symbol"], ln, t) for t, _, ln in inherited]
             seen = set()

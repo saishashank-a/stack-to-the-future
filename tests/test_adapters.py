@@ -177,3 +177,32 @@ def test_nextjs_app_beside_other_folders_splits_only_the_app():
     assert module_folders(["app/page.tsx", "app/blog/page.tsx", "app/(auth)/login/page.tsx",
                            "lib/db.ts", "components/nav.tsx"]) == ["app/(auth)/login", "app/blog", "app", "components", "lib"]
     assert module_folders(["pkg/app/layout.py", "pkg/core/x.py"]) == ["pkg/app", "pkg/core"]  # only JS/TS layouts count
+
+
+def test_fastapi_router_mounted_twice_keeps_every_mount(tmp_path):
+    result = repo(tmp_path, {
+        "app/__init__.py": "",
+        "app/deps.py": (
+            "from fastapi import HTTPException\n\n"
+            "def require_admin():\n"
+            "    raise HTTPException(status_code=403, detail='no')\n"
+        ),
+        "app/items.py": (
+            "from fastapi import APIRouter\n\n"
+            "router = APIRouter(prefix='/items')\n\n"
+            "@router.get('/')\n"
+            "def list_items():\n"
+            "    return []\n"
+        ),
+        "app/main.py": (
+            "from fastapi import Depends, FastAPI\n"
+            "from app import items\n"
+            "from app.deps import require_admin\n\n"
+            "app = FastAPI()\n"
+            "app.include_router(items.router, prefix='/v2', dependencies=[Depends(require_admin)])\n"
+            "app.include_router(items.router, prefix='/v1')\n"
+        ),
+    })
+    ep = next(e for e in result["entry_points"] if e["symbol"] == "list_items")
+    assert (ep["label"], ep["path"], ep["also_at"]) == ("GET /v1/items/", "/v1/items/", ["/v2/items/"])
+    assert ("list_items", "Depends(require_admin)") in {(b["function"], b["test"]) for b in result["permission_branches"]}
