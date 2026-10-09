@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from scan import scan
-from validate import banned_words, report, validate
+from validate import banned_words, check_citation, report, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 SCAN = scan(ROOT / "fixtures" / "leave-desk")
@@ -100,3 +100,16 @@ def test_schema_errors_stop_early_with_a_pointer():
     del atlas["workflows"][0]["stages"][0]["evidence"]
     errors = validate(atlas, SCAN)
     assert [e["rule"] for e in errors] == ["schema"] and errors[0]["where"] == "/workflows/0/stages/0"
+
+
+@pytest.mark.parametrize("data, loc", [(b"", 0), (b"a\n", 1), (b"a\nb", 2), (b"a\nb\n", 2)])
+def test_scan_counts_lines_exactly(tmp_path, data, loc):
+    (tmp_path / "m.py").write_bytes(data)
+    assert next(f for f in scan(tmp_path)["files"] if f["path"] == "m.py")["loc"] == loc
+
+
+def test_citation_may_end_on_the_last_line_but_not_past_it():
+    files = {f["path"]: f for f in SCAN["files"]}
+    loc = files["app/leave/service.py"]["loc"]
+    assert not check_citation({"path": "app/leave/service.py", "start_line": loc, "end_line": loc}, files, {})
+    assert check_citation({"path": "app/leave/service.py", "start_line": loc, "end_line": loc + 1}, files, {})

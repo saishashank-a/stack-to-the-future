@@ -299,7 +299,7 @@ def scan(root: str | Path, cache_dir: Path | None = None) -> dict:
     for path in list_files(root):
         data = (root / path).read_bytes()  # secret files are hashed for change detection, never parsed or stored
         entry = {"path": path, "sha256": hashlib.sha256(data).hexdigest(), "language": language(path, data),
-                 "loc": data.count(b"\n")}
+                 "loc": data.count(b"\n") + (bool(data) and not data.endswith(b"\n"))}  # last line may lack a newline
         if entry["language"] == "python":
             facts[path] = cache.facts(cache_dir, entry["sha256"], SCAN_VERSION, lambda: analyze_python(data))
             entry["parse_errors"] = facts[path].pop("parse_errors")
