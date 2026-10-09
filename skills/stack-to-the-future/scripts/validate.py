@@ -120,7 +120,10 @@ def validate(atlas: dict, scan: dict) -> list[dict]:
     for gi, g in enumerate(atlas["foundation"]):
         for j, p in enumerate(g["files"]):
             need(f"/foundation/{gi}/files/{j}", p, listed, "file")
-    targets = {"stage": stages, "path": paths, "file": listed, "workflow": workflows}
+    targets = {"stage": stages, "path": paths, "file": listed, "workflow": workflows, "module": modules,
+               "variant": {v["id"] for w in atlas["workflows"] for v in w["variants"]},
+               "shared_system": {s["id"] for s in atlas["shared_systems"]},
+               "link": {link_id(link) for link in atlas.get("links", [])}}
     for fi, flag in enumerate(atlas["flags"]):
         need(f"/flags/{fi}/target/id", flag["target"]["id"], targets[flag["target"]["type"]], flag["target"]["type"])
 
@@ -200,7 +203,35 @@ def validate(atlas: dict, scan: dict) -> list[dict]:
     for where, value in strings(atlas):
         if redact(value)[1]:
             err(where, "secret", "contains what looks like a secret value; remove it")
-    return errors
+
+    # A human-locked item whose code moved on is kept on purpose and flagged stale_override (see merge.py):
+    # its broken citations are expected, everything else about it is still checked.
+    items = pointers(atlas)
+    stale = [items[(f["target"]["type"], f["target"]["id"])] for f in atlas["flags"]
+             if f["kind"] == "stale_override" and (f["target"]["type"], f["target"]["id"]) in items]
+    stale += [f"/flags/{i}" for i, f in enumerate(atlas["flags"]) if f["kind"] == "stale_override"]
+    return [e for e in errors if e["rule"] not in STALE_TOLERATED
+            or not any(e["where"] == p or e["where"].startswith(p + "/") for p in stale)]
+
+
+STALE_TOLERATED = {"evidence", "symbol", "refs", "coverage"}
+
+
+def link_id(link: dict) -> str:
+    return f"{link['from_stage']}->{link['to_stage']}"
+
+
+def pointers(atlas: dict) -> dict[tuple[str, str], str]:
+    """(flag target type, id) -> JSON pointer, for every item a human can lock. A card is targeted as its file."""
+    out = {("module", m["id"]): f"/modules/{i}" for i, m in enumerate(atlas["modules"])}
+    out |= {("link", link_id(link)): f"/links/{i}" for i, link in enumerate(atlas.get("links", []))}
+    out |= {("file", c["file"]): f"/cards/{i}" for i, c in enumerate(atlas["cards"])}
+    out |= {("shared_system", s["id"]): f"/shared_systems/{i}" for i, s in enumerate(atlas["shared_systems"])}
+    for wi, w in enumerate(atlas["workflows"]):
+        out[("workflow", w["id"])] = f"/workflows/{wi}"
+        for key, kind in (("stages", "stage"), ("paths", "path"), ("variants", "variant")):
+            out |= {(kind, x["id"]): f"/workflows/{wi}/{key}/{i}" for i, x in enumerate(w[key])}
+    return out
 
 
 def evidence(node, where=""):

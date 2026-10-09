@@ -23,7 +23,7 @@ def cmd_scan(args) -> None:
     out.mkdir(exist_ok=True)
     if not (out / ".gitignore").exists():
         (out / ".gitignore").write_text(ATLAS_GITIGNORE)
-    result = scan.scan(root)
+    result = scan.scan(root, out / "cache")
     result["clusters"] = cluster.cluster(result, args.draft_limit)
     (out / "scan.json").write_text(json.dumps(result, indent=2) + "\n")
 
@@ -70,6 +70,52 @@ def cmd_excerpt(args) -> None:
         print(f"{n:>{width}} | {lines[n - 1]}")
 
 
+def _load(path: Path, hint: str) -> dict:
+    if not path.exists():
+        sys.exit(f"No {path}; {hint}")
+    return json.loads(path.read_text())
+
+
+def cmd_merge(args) -> None:
+    import checkpoint
+    import validate
+
+    atlas_dir = Path(args.root).resolve() / ".atlas"
+    scan_ = _load(atlas_dir / "scan.json", "run `atlas.py scan` first.")
+    previous = json.loads((atlas_dir / "atlas.json").read_text()) if (atlas_dir / "atlas.json").exists() else None
+    merged = checkpoint.merge(previous, _load(Path(args.draft), "nothing to merge."), scan_)
+    if not args.approve:
+        (atlas_dir / "draft.json").write_text(json.dumps(merged, indent=2) + "\n")
+        print(checkpoint.outline(merged))
+        return
+    errors = validate.validate(merged, scan_)
+    if errors:
+        print(validate.report(errors))
+        sys.exit(1)
+    (atlas_dir / "atlas.json").write_text(json.dumps(merged, indent=2) + "\n")
+    print(f"Approved -> {atlas_dir / 'atlas.json'}")
+
+
+def cmd_stale(args) -> None:
+    import checkpoint
+
+    atlas_dir = Path(args.root).resolve() / ".atlas"
+    redraft, review = checkpoint.stale(_load(atlas_dir / "atlas.json", "no approved atlas yet; draft one first."),
+                                       _load(atlas_dir / "scan.json", "run `atlas.py scan` first."))
+    if not redraft and not review:
+        print("Nothing changed since the atlas was approved.")
+    for title, items in ((f"Re-draft ({len(redraft)}):", redraft), (f"Needs human review, locked by you ({len(review)}):", review)):
+        if items:
+            print(title, *(f"  - {i}" for i in items), sep="\n")
+
+
+def cmd_outline(args) -> None:
+    import checkpoint
+
+    atlas_dir = Path(args.root).resolve() / ".atlas"
+    print(checkpoint.outline(_load(atlas_dir / ("draft.json" if args.draft else "atlas.json"), "nothing to outline yet.")))
+
+
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(prog="atlas.py", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -87,6 +133,18 @@ def main(argv=None) -> None:
     p.add_argument("end", type=int)
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_excerpt)
+    p = sub.add_parser("merge", help="merge a draft with locked corrections; --approve validates and writes atlas.json")
+    p.add_argument("draft")
+    p.add_argument("--root", default=".")
+    p.add_argument("--approve", action="store_true")
+    p.set_defaults(func=cmd_merge)
+    p = sub.add_parser("stale", help="list what a re-scan made stale since atlas.json was approved")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_stale)
+    p = sub.add_parser("outline", help="print the checkpoint outline of atlas.json (or draft.json with --draft)")
+    p.add_argument("--root", default=".")
+    p.add_argument("--draft", action="store_true")
+    p.set_defaults(func=cmd_outline)
     args = parser.parse_args(argv)
     args.func(args)
 

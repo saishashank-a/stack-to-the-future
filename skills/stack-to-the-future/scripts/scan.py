@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -16,6 +17,7 @@ from pathlib import Path
 import tree_sitter_python
 from tree_sitter import Language, Parser
 
+import cache
 import graph
 from redact import is_secret_file, redact_obj
 
@@ -283,7 +285,7 @@ class Project:
 
 # ---------------------------------------------------------------- the scan
 
-def scan(root: str | Path) -> dict:
+def scan(root: str | Path, cache_dir: Path | None = None) -> dict:
     root = Path(root).resolve()
     files, facts = [], {}
     for path in list_files(root):
@@ -291,7 +293,7 @@ def scan(root: str | Path) -> dict:
         entry = {"path": path, "sha256": hashlib.sha256(data).hexdigest(), "language": language(path, data),
                  "loc": data.count(b"\n")}
         if entry["language"] == "python":
-            facts[path] = analyze_python(data)
+            facts[path] = cache.facts(cache_dir, entry["sha256"], SCAN_VERSION, lambda: analyze_python(data))
             entry["parse_errors"] = facts[path].pop("parse_errors")
         files.append(entry)
 
@@ -333,8 +335,8 @@ def scan(root: str | Path) -> dict:
         "models": models(project),
         "incomplete": sorted(incomplete, key=lambda i: (i["file"], i["line"])),
     }
-    result, hits = redact_obj(result)
-    result["redactions"] = hits
+    result, _ = redact_obj(result)
+    result["redactions"] = json.dumps(result).count("[REDACTED:")  # same count whether facts came from cache or not
     return result
 
 
