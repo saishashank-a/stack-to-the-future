@@ -1,6 +1,7 @@
 """Find and scrub secret values. Runs on everything the skill stores, shows Claude, or renders."""
 import fnmatch
 import re
+from pathlib import Path
 
 SECRET_FILES = (
     ".env", ".env.*", "*.env", "*.pem", "*.key", "*.p12", "*.pfx", "*.jks", "*.keystore",
@@ -44,6 +45,17 @@ def redact(text: str) -> tuple[str, int]:
             return m.group(0)[:start] + f"[REDACTED:{kind}]" + kept_lines + m.group(0)[end:]
         text = pattern.sub(replace, text)
     return text, hits
+
+
+def read_redacted(root: Path, path: str) -> list[str]:
+    """Source lines of a repo file, redacted, for showing to Claude. Refuses secrets files and paths outside root."""
+    root = Path(root).resolve()
+    target = (root / path).resolve()
+    if not target.is_relative_to(root) or not target.is_file():
+        raise ValueError(f"{path} is not a file inside {root}")
+    if is_secret_file(path):
+        raise ValueError(f"{path} is a secrets file; it is never read.")
+    return redact(target.read_text(errors="replace"))[0].splitlines()
 
 
 def redact_obj(obj):
