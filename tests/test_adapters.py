@@ -159,3 +159,21 @@ def test_fastapi_annotated_deps_nested_prefixes_tasks_and_middleware(tmp_path):
     assert {("read_me", "Depends(get_current_user)"), ("create_user", "Depends(get_superuser)")} <= guarded
     hints = {f["path"]: (f["hint"], f.get("group")) for f in result["files"]}
     assert hints["app/timing.py"] == ("foundation", "wiring")
+
+
+def test_nextjs_modules_follow_url_segments():
+    from cluster import cluster
+    result = cluster(scan(ROOT / "fixtures" / "nextjs-app"))
+    assert {m["id"]: m["files"] for m in result["modules"]} == {
+        "products": ["app/(shop)/products/[id]/page.tsx", "app/(shop)/products/page.tsx"],
+        "orders": ["app/api/orders/route.ts"],
+        "app": ["app/_drafts/page.tsx", "app/actions.ts", "app/layout.tsx", "app/page.tsx"],
+    }  # route groups and api/ are see-through; root files and _private folders stay with the app
+    assert result["unassigned"] == []
+
+
+def test_nextjs_app_beside_other_folders_splits_only_the_app():
+    from cluster import module_folders
+    assert module_folders(["app/page.tsx", "app/blog/page.tsx", "app/(auth)/login/page.tsx",
+                           "lib/db.ts", "components/nav.tsx"]) == ["app/(auth)/login", "app/blog", "app", "components", "lib"]
+    assert module_folders(["pkg/app/layout.py", "pkg/core/x.py"]) == ["pkg/app", "pkg/core"]  # only JS/TS layouts count
