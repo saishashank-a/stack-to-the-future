@@ -30,6 +30,8 @@ def test_contextual_secrets():
     for source, secret in cases:
         text, _ = redact(source)
         assert secret not in text, source
+    key_block = "a\n-----BEGIN RSA PRIVATE KEY-----\nMIIabc\n-----END RSA PRIVATE KEY-----\nb"
+    assert redact(key_block)[0].count("\n") == key_block.count("\n")  # excerpt line numbers stay true
     assert redact('name = "leave-desk"') == ('name = "leave-desk"', 0)
     once, _ = redact('token = "abcdefgh12345"')
     assert redact(once) == (once, 0)

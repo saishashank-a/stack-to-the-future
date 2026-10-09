@@ -40,7 +40,8 @@ def redact(text: str) -> tuple[str, int]:
             nonlocal hits
             hits += 1
             start, end = m.start(group) - m.start(), m.end(group) - m.start()
-            return m.group(0)[:start] + f"[REDACTED:{kind}]" + m.group(0)[end:]
+            kept_lines = "\n" * m.group(0)[start:end].count("\n")  # keep line numbers stable for cited excerpts
+            return m.group(0)[:start] + f"[REDACTED:{kind}]" + kept_lines + m.group(0)[end:]
         text = pattern.sub(replace, text)
     return text, hits
 

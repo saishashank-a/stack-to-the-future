@@ -7,25 +7,24 @@ description: Map a codebase into an "anatomy atlas" - plain-language business wo
 
 > Where we're going, we don't need docs.
 
-**Status: milestone (b).** The deterministic scan works. Naming stages, file cards, validation and rendering are not built yet.
+**Status: milestone (c).** Scan, draft and validate work. The human checkpoint, caching and rendering are not built yet.
 
-## What works now
+`ATLAS` below means `uv run --script <skill-base-dir>/scripts/atlas.py`, using `scripts/atlas.py` from this skill's base directory. `<root>` is the repository (the user's path, default the current directory).
 
-1. Check `uv` is installed (`uv --version`). If not, tell the user to install it from https://docs.astral.sh/uv/ and stop.
-2. Scan the repository root (the user's path, default the current directory), using `scripts/atlas.py` from this skill's base directory:
+## Workflow
 
-   ```sh
-   uv run --script <skill-base-dir>/scripts/atlas.py scan <root> [--draft-limit 8]
-   ```
+1. **Preflight.** Check `uv --version`; if missing, tell the user to install it from https://docs.astral.sh/uv/ and stop. If `<root>/.atlas/atlas.json` exists this is a re-run: read it. Tell the user everything stays local in `<root>/.atlas/`.
+2. **Scan.** `ATLAS scan <root> [--draft-limit 8]` writes `.atlas/scan.json` (facts + clusters) and `.atlas/.gitignore`. Report the printed summary.
+3. **Cluster.** Done inside `scan`: `scan.json` → `clusters` holds modules with a suggested role, workflow skeletons, shared-system candidates, foundation groups and `draft_now`.
+4. **Draft.** Follow `templates/draft_instructions.md` exactly. Read source only through `ATLAS excerpt <path> <start> <end> --root <root>` (redacted, line-numbered; secrets files are refused). Write `<root>/.atlas/draft.json`. With several modules in `draft_now`, you may give each module to a subagent along with the same instructions, then combine their sections into one draft.
+5. **Validate.** `ATLAS validate <root>/.atlas/draft.json --root <root>`. It prints a numbered list `[rule] /json/pointer: reason`. Fix exactly those items and validate again. Maximum 3 rounds; after that, drop what still fails, add a flag saying what could not be drawn, validate once more, and tell the user what was dropped.
 
-   This writes `<root>/.atlas/scan.json` and `<root>/.atlas/.gitignore`. Nothing leaves the machine and no secret values are stored.
-3. Report the printed summary: entry points, status machines, permission branches, models, incomplete code, and modules with their role (business / shared / foundation).
-4. Tell the user the next steps (business-language stages, file cards, diagrams) arrive in later milestones; see PLAN.md section 3.
+Then stop: show the user a short outline (modules → workflows → stages, with branches and flags) and say the confirm/correct checkpoint, caching and diagrams arrive in later milestones (PLAN.md section 3, steps 6-10).
 
 ## Reading scan.json
 
 - `entry_points`, `status_machines`, `permission_branches`, `models`, `incomplete`: facts with file paths and line numbers.
+- `symbols`: every function, method, class and assignment with its lines. Evidence `symbol` values must come from here.
 - `clusters.modules`: one per top-level package or app folder, with a suggested `role`.
-- `clusters.workflows`: skeletons (entry points grouped by file, call reachability and shared status machines) to be named in business language.
-- `clusters.foundation`: plumbing files by group; `clusters.shared_candidates`: likely shared systems.
-- Framework-specific wiring (router prefixes, `Depends`, Celery tasks sent by name) is not resolved until the adapters milestone.
+- `clusters.workflows`: skeletons to name in business language; merge or split as the code demands.
+- Framework-specific wiring (router prefixes, `Depends`, Celery tasks sent by name) is not resolved until the adapters milestone; read the excerpt when a link looks missing.

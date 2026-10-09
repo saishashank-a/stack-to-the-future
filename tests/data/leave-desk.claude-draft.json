@@ -1,0 +1,1778 @@
+{
+  "atlas_version": "0.1",
+  "project": {
+    "name": "leave-desk",
+    "summary": "A small office tool where staff ask for time off and managers sign it off; HR gets a monthly roundup of who was away.",
+    "generated_at": "2026-10-10T09:00:00Z",
+    "scanner_version": "0.1",
+    "languages": [
+      "python"
+    ],
+    "frameworks": [
+      "celery",
+      "fastapi",
+      "pydantic",
+      "pydantic_settings",
+      "sqlalchemy"
+    ]
+  },
+  "modules": [
+    {
+      "id": "leave",
+      "name": "Time off requests",
+      "summary": "Asking for days off, getting them approved or turned down, and keeping each person's allowance up to date.",
+      "workflows": [
+        "book-time-off",
+        "see-my-requests"
+      ],
+      "files": [
+        "app/leave/balance.py",
+        "app/leave/models.py",
+        "app/leave/routes.py",
+        "app/leave/schemas.py",
+        "app/leave/service.py",
+        "app/leave/tasks.py"
+      ],
+      "entry_points": [
+        {
+          "kind": "api_route",
+          "label": "Ask for time off",
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 14,
+              "end_line": 16,
+              "symbol": "submit_leave"
+            }
+          ]
+        },
+        {
+          "kind": "api_route",
+          "label": "List my requests",
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 19,
+              "end_line": 21,
+              "symbol": "my_leave"
+            }
+          ]
+        },
+        {
+          "kind": "api_route",
+          "label": "Approve a request",
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 24,
+              "end_line": 26,
+              "symbol": "approve_leave"
+            }
+          ]
+        },
+        {
+          "kind": "api_route",
+          "label": "Turn down a request",
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 29,
+              "end_line": 31,
+              "symbol": "reject_leave"
+            }
+          ]
+        },
+        {
+          "kind": "background_job",
+          "label": "Email the manager",
+          "evidence": [
+            {
+              "path": "app/leave/tasks.py",
+              "start_line": 8,
+              "end_line": 13,
+              "symbol": "notify_manager"
+            }
+          ]
+        },
+        {
+          "kind": "background_job",
+          "label": "Email the outcome",
+          "evidence": [
+            {
+              "path": "app/leave/tasks.py",
+              "start_line": 16,
+              "end_line": 21,
+              "symbol": "notify_decision"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "app/leave/service.py",
+          "start_line": 1,
+          "end_line": 1
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "id": "reports",
+      "name": "HR reports",
+      "summary": "Monthly totals of approved time off sent to HR, and a spreadsheet download that is not finished.",
+      "workflows": [
+        "monthly-roundup",
+        "download-spreadsheet"
+      ],
+      "files": [
+        "app/reports/routes.py",
+        "app/reports/service.py",
+        "app/reports/tasks.py"
+      ],
+      "entry_points": [
+        {
+          "kind": "scheduled_job",
+          "label": "Monthly roundup, 1st of the month at 6am",
+          "evidence": [
+            {
+              "path": "app/worker.py",
+              "start_line": 8,
+              "end_line": 13
+            }
+          ]
+        },
+        {
+          "kind": "api_route",
+          "label": "Run the roundup now",
+          "evidence": [
+            {
+              "path": "app/reports/routes.py",
+              "start_line": 16,
+              "end_line": 19,
+              "symbol": "run_monthly_summary"
+            }
+          ]
+        },
+        {
+          "kind": "api_route",
+          "label": "Download leave as a spreadsheet",
+          "evidence": [
+            {
+              "path": "app/reports/routes.py",
+              "start_line": 22,
+              "end_line": 24,
+              "symbol": "export"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "path": "app/reports/service.py",
+          "start_line": 1,
+          "end_line": 1
+        }
+      ],
+      "provenance": "claude"
+    }
+  ],
+  "links": [
+    {
+      "from_stage": "book-time-off/approved",
+      "to_stage": "monthly-roundup/add-up",
+      "label": "approved time off shows up in next month's roundup",
+      "evidence": [
+        {
+          "path": "app/leave/service.py",
+          "start_line": 73,
+          "end_line": 73,
+          "symbol": "_approve"
+        },
+        {
+          "path": "app/reports/service.py",
+          "start_line": 10,
+          "end_line": 19,
+          "symbol": "approved_leave_by_person"
+        }
+      ],
+      "provenance": "claude"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "book-time-off",
+      "module": "leave",
+      "name": "Book time off",
+      "summary": "Someone asks for days off; depending on how long and who they are, it is signed off automatically, by themselves, or by their manager.",
+      "actors": [
+        "Employee",
+        "Manager",
+        "System"
+      ],
+      "stages": [
+        {
+          "id": "book-time-off/ask",
+          "name": "Employee asks for days off",
+          "description": "Dates and a reason are sent in. If the person doesn't have enough days left it stops here.",
+          "actor": "Employee",
+          "kind": "start",
+          "files": [
+            {
+              "file": "app/leave/routes.py",
+              "contribution": "owner",
+              "label": "routes.py: submit_leave"
+            },
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: submit_request"
+            },
+            {
+              "file": "app/leave/schemas.py",
+              "contribution": "helper",
+              "label": "schemas.py: LeaveRequestIn"
+            },
+            {
+              "file": "app/leave/balance.py",
+              "contribution": "helper",
+              "label": "balance.py: has_enough"
+            },
+            {
+              "file": "app/shared/audit.py",
+              "contribution": "shared_system",
+              "label": "audit.py: record"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 14,
+              "end_line": 16,
+              "symbol": "submit_leave"
+            },
+            {
+              "path": "app/leave/service.py",
+              "start_line": 22,
+              "end_line": 29,
+              "symbol": "submit_request"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/who-signs",
+          "name": "Work out who signs it off",
+          "description": "A day or less needs nobody. A manager taking three days or fewer signs their own. Anything else goes to the person's manager.",
+          "actor": "System",
+          "kind": "decision",
+          "files": [
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: choose_route"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 13,
+              "end_line": 19,
+              "symbol": "choose_route"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/auto-ok",
+          "name": "Signed off automatically",
+          "description": "Short requests go straight through.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: approve_directly"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 40,
+              "end_line": 41,
+              "symbol": "approve_directly"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/self-ok",
+          "name": "Manager signs off their own request",
+          "description": "The request is approved in the manager's own name.",
+          "actor": "Manager",
+          "kind": "step",
+          "files": [
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: self_approve"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 44,
+              "end_line": 45,
+              "symbol": "self_approve"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/tell-manager",
+          "name": "Manager gets an email to review",
+          "description": "The person's manager is told a request is waiting.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            {
+              "file": "app/leave/tasks.py",
+              "contribution": "owner",
+              "label": "tasks.py: notify_manager"
+            },
+            {
+              "file": "app/shared/notifications.py",
+              "contribution": "shared_system",
+              "label": "notifications.py: send_email"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 34,
+              "end_line": 35,
+              "symbol": "submit_request"
+            },
+            {
+              "path": "app/leave/tasks.py",
+              "start_line": 8,
+              "end_line": 13,
+              "symbol": "notify_manager"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/manager-decides",
+          "name": "Manager says yes or no",
+          "description": "Only the person's own manager, or HR, may decide, and only while the request is still waiting.",
+          "actor": "Manager",
+          "kind": "decision",
+          "files": [
+            {
+              "file": "app/leave/routes.py",
+              "contribution": "owner",
+              "label": "routes.py: approve_leave, reject_leave"
+            },
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: _check_reviewer"
+            },
+            {
+              "file": "app/shared/auth.py",
+              "contribution": "shared_system",
+              "label": "auth.py: require_manager"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 24,
+              "end_line": 31
+            },
+            {
+              "path": "app/leave/service.py",
+              "start_line": 65,
+              "end_line": 69,
+              "symbol": "_check_reviewer"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/turned-down",
+          "name": "Request turned down",
+          "description": "Marked as rejected, written to the log, and the employee is emailed. No days are used.",
+          "actor": "Manager",
+          "kind": "end",
+          "files": [
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: reject_by_manager"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 55,
+              "end_line": 62,
+              "symbol": "reject_by_manager"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/approved",
+          "name": "Days come off the allowance",
+          "description": "All three ways of signing off meet here: the request is marked approved and the days are taken from the person's allowance.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            {
+              "file": "app/leave/service.py",
+              "contribution": "owner",
+              "label": "service.py: _approve"
+            },
+            {
+              "file": "app/leave/balance.py",
+              "contribution": "owner",
+              "label": "balance.py: deduct"
+            },
+            {
+              "file": "app/leave/models.py",
+              "contribution": "helper",
+              "label": "models.py: LeaveStatus"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 72,
+              "end_line": 76,
+              "symbol": "_approve"
+            },
+            {
+              "path": "app/leave/balance.py",
+              "start_line": 9,
+              "end_line": 11,
+              "symbol": "deduct"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/tell-employee",
+          "name": "Employee hears the outcome",
+          "description": "An email goes to the employee.",
+          "actor": "System",
+          "kind": "end",
+          "files": [
+            {
+              "file": "app/leave/tasks.py",
+              "contribution": "owner",
+              "label": "tasks.py: notify_decision"
+            },
+            {
+              "file": "app/shared/notifications.py",
+              "contribution": "shared_system",
+              "label": "notifications.py: send_email"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/tasks.py",
+              "start_line": 16,
+              "end_line": 21,
+              "symbol": "notify_decision"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/cancel",
+          "name": "Employee cancels booked time off",
+          "description": "There is a cancelled state, but nothing ever sets it: cancelling isn't built.",
+          "actor": "Employee",
+          "kind": "end",
+          "status": "incomplete",
+          "files": [
+            {
+              "file": "app/leave/models.py",
+              "contribution": "helper",
+              "label": "models.py: LeaveStatus.CANCELLED"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/models.py",
+              "start_line": 21,
+              "end_line": 21,
+              "symbol": "LeaveStatus.CANCELLED"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "paths": [
+        {
+          "id": "book-time-off/ask-to-decide",
+          "from": "book-time-off/ask",
+          "to": "book-time-off/who-signs",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 26,
+              "end_line": 26,
+              "symbol": "submit_request"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/to-auto",
+          "from": "book-time-off/who-signs",
+          "to": "book-time-off/auto-ok",
+          "label": "a day or less",
+          "variants": [
+            "book-time-off/automatic"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 30,
+              "end_line": 31,
+              "symbol": "submit_request"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/to-self",
+          "from": "book-time-off/who-signs",
+          "to": "book-time-off/self-ok",
+          "label": "manager, three days or fewer",
+          "variants": [
+            "book-time-off/self-sign"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 32,
+              "end_line": 33,
+              "symbol": "submit_request"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/to-manager",
+          "from": "book-time-off/who-signs",
+          "to": "book-time-off/tell-manager",
+          "label": "anything longer",
+          "variants": [
+            "book-time-off/manager-sign"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 34,
+              "end_line": 35,
+              "symbol": "submit_request"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/manager-reviews",
+          "from": "book-time-off/tell-manager",
+          "to": "book-time-off/manager-decides",
+          "variants": [
+            "book-time-off/manager-sign"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 24,
+              "end_line": 31
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/manager-yes",
+          "from": "book-time-off/manager-decides",
+          "to": "book-time-off/approved",
+          "label": "yes",
+          "variants": [
+            "book-time-off/manager-sign"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 48,
+              "end_line": 52,
+              "symbol": "approve_by_manager"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/manager-no",
+          "from": "book-time-off/manager-decides",
+          "to": "book-time-off/turned-down",
+          "label": "no",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 55,
+              "end_line": 57,
+              "symbol": "reject_by_manager"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/auto-merge",
+          "from": "book-time-off/auto-ok",
+          "to": "book-time-off/approved",
+          "variants": [
+            "book-time-off/automatic"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 41,
+              "end_line": 41,
+              "symbol": "approve_directly"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/self-merge",
+          "from": "book-time-off/self-ok",
+          "to": "book-time-off/approved",
+          "variants": [
+            "book-time-off/self-sign"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 45,
+              "end_line": 45,
+              "symbol": "self_approve"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/approved-email",
+          "from": "book-time-off/approved",
+          "to": "book-time-off/tell-employee",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 77,
+              "end_line": 77,
+              "symbol": "_approve"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/cancel-missing",
+          "from": "book-time-off/approved",
+          "to": "book-time-off/cancel",
+          "label": "not built",
+          "variants": [],
+          "status": "incomplete",
+          "evidence": [
+            {
+              "path": "app/leave/models.py",
+              "start_line": 21,
+              "end_line": 21,
+              "symbol": "LeaveStatus.CANCELLED"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "variants": [
+        {
+          "id": "book-time-off/automatic",
+          "name": "Automatic",
+          "condition": "for a day or less",
+          "route": [
+            "book-time-off/who-signs",
+            "book-time-off/auto-ok",
+            "book-time-off/approved"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 15,
+              "end_line": 16,
+              "symbol": "choose_route"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/self-sign",
+          "name": "Manager signs their own",
+          "condition": "when a manager asks for three days or fewer",
+          "route": [
+            "book-time-off/who-signs",
+            "book-time-off/self-ok",
+            "book-time-off/approved"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 17,
+              "end_line": 18,
+              "symbol": "choose_route"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "book-time-off/manager-sign",
+          "name": "Manager signs it off",
+          "condition": "for everything else",
+          "route": [
+            "book-time-off/who-signs",
+            "book-time-off/tell-manager",
+            "book-time-off/manager-decides",
+            "book-time-off/approved"
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/service.py",
+              "start_line": 19,
+              "end_line": 19,
+              "symbol": "choose_route"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "id": "see-my-requests",
+      "module": "leave",
+      "name": "See my requests",
+      "summary": "An employee looks at the time off they have asked for and where each request stands.",
+      "actors": [
+        "Employee"
+      ],
+      "stages": [
+        {
+          "id": "see-my-requests/open",
+          "name": "Employee opens their requests",
+          "description": "Shows every request the signed-in person has made.",
+          "actor": "Employee",
+          "kind": "start",
+          "files": [
+            {
+              "file": "app/leave/routes.py",
+              "contribution": "owner",
+              "label": "routes.py: my_leave"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 19,
+              "end_line": 21,
+              "symbol": "my_leave"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "see-my-requests/shown",
+          "name": "List of requests is shown",
+          "description": "Each request with its dates, days and current state.",
+          "actor": "System",
+          "kind": "end",
+          "files": [
+            {
+              "file": "app/leave/schemas.py",
+              "contribution": "helper",
+              "label": "schemas.py: LeaveRequestOut"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/leave/schemas.py",
+              "start_line": 22,
+              "end_line": 30,
+              "symbol": "LeaveRequestOut"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "paths": [
+        {
+          "id": "see-my-requests/list",
+          "from": "see-my-requests/open",
+          "to": "see-my-requests/shown",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/leave/routes.py",
+              "start_line": 21,
+              "end_line": 21,
+              "symbol": "my_leave"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "variants": [],
+      "provenance": "claude"
+    },
+    {
+      "id": "monthly-roundup",
+      "module": "reports",
+      "name": "Monthly roundup for HR",
+      "summary": "Once a month, or when HR asks, last month's approved time off is added up per person and emailed to HR.",
+      "actors": [
+        "HR",
+        "System"
+      ],
+      "stages": [
+        {
+          "id": "monthly-roundup/due",
+          "name": "Roundup is due",
+          "description": "Runs by itself at 6am on the 1st; HR can also start it by hand.",
+          "actor": "System",
+          "kind": "start",
+          "files": [
+            {
+              "file": "app/reports/routes.py",
+              "contribution": "helper",
+              "label": "routes.py: run_monthly_summary"
+            },
+            {
+              "file": "app/reports/tasks.py",
+              "contribution": "owner",
+              "label": "tasks.py: monthly_summary"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/worker.py",
+              "start_line": 8,
+              "end_line": 13
+            },
+            {
+              "path": "app/reports/routes.py",
+              "start_line": 16,
+              "end_line": 19,
+              "symbol": "run_monthly_summary"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "monthly-roundup/add-up",
+          "name": "Add up last month's approved days",
+          "description": "Totals approved days per person for time off that started last month.",
+          "actor": "System",
+          "kind": "step",
+          "files": [
+            {
+              "file": "app/reports/service.py",
+              "contribution": "owner",
+              "label": "service.py: approved_leave_by_person"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/reports/service.py",
+              "start_line": 10,
+              "end_line": 19,
+              "symbol": "approved_leave_by_person"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "monthly-roundup/sent",
+          "name": "HR gets the roundup by email",
+          "description": "One line per person, sent to the HR inbox.",
+          "actor": "System",
+          "kind": "end",
+          "files": [
+            {
+              "file": "app/reports/service.py",
+              "contribution": "helper",
+              "label": "service.py: format_summary"
+            },
+            {
+              "file": "app/reports/tasks.py",
+              "contribution": "owner",
+              "label": "tasks.py: monthly_summary"
+            },
+            {
+              "file": "app/shared/notifications.py",
+              "contribution": "shared_system",
+              "label": "notifications.py: send_email"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/reports/tasks.py",
+              "start_line": 17,
+              "end_line": 17,
+              "symbol": "monthly_summary"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "paths": [
+        {
+          "id": "monthly-roundup/count",
+          "from": "monthly-roundup/due",
+          "to": "monthly-roundup/add-up",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/reports/tasks.py",
+              "start_line": 15,
+              "end_line": 16,
+              "symbol": "monthly_summary"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "monthly-roundup/send",
+          "from": "monthly-roundup/add-up",
+          "to": "monthly-roundup/sent",
+          "variants": [],
+          "evidence": [
+            {
+              "path": "app/reports/tasks.py",
+              "start_line": 17,
+              "end_line": 17,
+              "symbol": "monthly_summary"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "variants": [],
+      "provenance": "claude"
+    },
+    {
+      "id": "download-spreadsheet",
+      "module": "reports",
+      "name": "Download a leave spreadsheet",
+      "summary": "HR picks dates to download; the download itself is not built yet.",
+      "actors": [
+        "HR"
+      ],
+      "stages": [
+        {
+          "id": "download-spreadsheet/pick-dates",
+          "name": "HR picks a date range",
+          "description": "Only HR can ask for this.",
+          "actor": "HR",
+          "kind": "start",
+          "files": [
+            {
+              "file": "app/reports/routes.py",
+              "contribution": "owner",
+              "label": "routes.py: export"
+            },
+            {
+              "file": "app/shared/auth.py",
+              "contribution": "shared_system",
+              "label": "auth.py: require_hr"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/reports/routes.py",
+              "start_line": 22,
+              "end_line": 24,
+              "symbol": "export"
+            }
+          ],
+          "provenance": "claude"
+        },
+        {
+          "id": "download-spreadsheet/build",
+          "name": "Spreadsheet is built",
+          "description": "Not built yet: asking for it fails.",
+          "actor": "System",
+          "kind": "end",
+          "status": "incomplete",
+          "files": [
+            {
+              "file": "app/reports/service.py",
+              "contribution": "owner",
+              "label": "service.py: export_csv"
+            }
+          ],
+          "evidence": [
+            {
+              "path": "app/reports/service.py",
+              "start_line": 27,
+              "end_line": 28,
+              "symbol": "export_csv"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "paths": [
+        {
+          "id": "download-spreadsheet/ask",
+          "from": "download-spreadsheet/pick-dates",
+          "to": "download-spreadsheet/build",
+          "variants": [],
+          "status": "incomplete",
+          "evidence": [
+            {
+              "path": "app/reports/routes.py",
+              "start_line": 24,
+              "end_line": 24,
+              "symbol": "export"
+            }
+          ],
+          "provenance": "claude"
+        }
+      ],
+      "variants": [],
+      "provenance": "claude"
+    }
+  ],
+  "cards": [
+    {
+      "file": "app/leave/routes.py",
+      "role": "Where time-off requests arrive and where managers give their answer.",
+      "stages": [
+        "book-time-off/ask",
+        "book-time-off/manager-decides",
+        "see-my-requests/open"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a request for days off",
+          "from_or_to": "the employee"
+        },
+        {
+          "what": "a yes or no",
+          "from_or_to": "the manager"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "the request and who sent it",
+          "from_or_to": "app/leave/service.py"
+        }
+      ],
+      "if_removed": "Nobody can ask for time off, see their requests, or approve anything.",
+      "evidence": [
+        {
+          "path": "app/leave/routes.py",
+          "start_line": 14,
+          "end_line": 38
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/leave/service.py",
+      "role": "The rules: who signs off what, and what happens when they do.",
+      "stages": [
+        "book-time-off/ask",
+        "book-time-off/who-signs",
+        "book-time-off/auto-ok",
+        "book-time-off/self-ok",
+        "book-time-off/manager-decides",
+        "book-time-off/turned-down",
+        "book-time-off/approved"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a request and the person acting on it",
+          "from_or_to": "app/leave/routes.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "days to take off",
+          "from_or_to": "app/leave/balance.py"
+        },
+        {
+          "what": "emails to send",
+          "from_or_to": "app/leave/tasks.py"
+        }
+      ],
+      "if_removed": "Requests can't be routed, approved or turned down.",
+      "evidence": [
+        {
+          "path": "app/leave/service.py",
+          "start_line": 13,
+          "end_line": 77
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/leave/balance.py",
+      "role": "Keeps track of how many days each person has left.",
+      "stages": [
+        "book-time-off/ask",
+        "book-time-off/approved"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a person and a number of days",
+          "from_or_to": "app/leave/service.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "the new allowance",
+          "from_or_to": "app/leave/models.py"
+        }
+      ],
+      "if_removed": "People could take more days than they have, and approved days would never be counted.",
+      "evidence": [
+        {
+          "path": "app/leave/balance.py",
+          "start_line": 5,
+          "end_line": 11
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/leave/tasks.py",
+      "role": "Sends the 'please review' and 'here is your answer' emails in the background.",
+      "stages": [
+        "book-time-off/tell-manager",
+        "book-time-off/tell-employee"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a request number",
+          "from_or_to": "app/leave/service.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "an email",
+          "from_or_to": "app/shared/notifications.py"
+        }
+      ],
+      "if_removed": "Managers don't hear about waiting requests and employees never hear back.",
+      "evidence": [
+        {
+          "path": "app/leave/tasks.py",
+          "start_line": 8,
+          "end_line": 21
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/leave/models.py",
+      "role": "What gets stored about people and their requests, including each request's state.",
+      "stages": [
+        "book-time-off/approved",
+        "book-time-off/cancel"
+      ],
+      "contribution": "helper",
+      "receives": [
+        {
+          "what": "changes to people and requests",
+          "from_or_to": "app/leave/service.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "saved records",
+          "from_or_to": "the database"
+        }
+      ],
+      "if_removed": "Nothing about people or time off can be saved, so the whole app stops.",
+      "evidence": [
+        {
+          "path": "app/leave/models.py",
+          "start_line": 11,
+          "end_line": 50
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/leave/schemas.py",
+      "role": "Checks the request form and decides what a request looks like when shown back.",
+      "stages": [
+        "book-time-off/ask",
+        "see-my-requests/shown"
+      ],
+      "contribution": "helper",
+      "receives": [
+        {
+          "what": "the filled-in form",
+          "from_or_to": "the employee"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "a checked request",
+          "from_or_to": "app/leave/routes.py"
+        }
+      ],
+      "if_removed": "Requests with an end date before the start would get through.",
+      "evidence": [
+        {
+          "path": "app/leave/schemas.py",
+          "start_line": 9,
+          "end_line": 30
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/reports/routes.py",
+      "role": "HR's buttons: run the roundup now, or download a spreadsheet.",
+      "stages": [
+        "monthly-roundup/due",
+        "download-spreadsheet/pick-dates"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a request from HR",
+          "from_or_to": "HR"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "a start-the-roundup job",
+          "from_or_to": "app/reports/tasks.py"
+        }
+      ],
+      "if_removed": "HR can't start the roundup by hand or ask for a download.",
+      "evidence": [
+        {
+          "path": "app/reports/routes.py",
+          "start_line": 16,
+          "end_line": 24
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/reports/service.py",
+      "role": "Adds up approved days per person and writes the roundup text.",
+      "stages": [
+        "monthly-roundup/add-up",
+        "monthly-roundup/sent",
+        "download-spreadsheet/build"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "a month",
+          "from_or_to": "app/reports/tasks.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "the roundup text",
+          "from_or_to": "app/reports/tasks.py"
+        }
+      ],
+      "if_removed": "The roundup has no numbers in it.",
+      "evidence": [
+        {
+          "path": "app/reports/service.py",
+          "start_line": 10,
+          "end_line": 28
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/reports/tasks.py",
+      "role": "The monthly job that builds the roundup and emails it to HR.",
+      "stages": [
+        "monthly-roundup/due",
+        "monthly-roundup/sent"
+      ],
+      "contribution": "owner",
+      "receives": [
+        {
+          "what": "the monthly timer or HR's button",
+          "from_or_to": "app/worker.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "the roundup email",
+          "from_or_to": "app/shared/notifications.py"
+        }
+      ],
+      "if_removed": "HR stops getting the monthly roundup.",
+      "evidence": [
+        {
+          "path": "app/reports/tasks.py",
+          "start_line": 11,
+          "end_line": 17
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/shared/auth.py",
+      "role": "Works out who is asking and turns away anyone without the right job.",
+      "stages": [
+        "book-time-off/manager-decides",
+        "download-spreadsheet/pick-dates"
+      ],
+      "contribution": "shared_system",
+      "receives": [
+        {
+          "what": "the caller's staff number",
+          "from_or_to": "every request"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "the signed-in person, or a refusal",
+          "from_or_to": "app/leave/routes.py"
+        }
+      ],
+      "if_removed": "No screen knows who is using it.",
+      "evidence": [
+        {
+          "path": "app/shared/auth.py",
+          "start_line": 9,
+          "end_line": 25
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/shared/notifications.py",
+      "role": "The one place the app sends email from.",
+      "stages": [
+        "book-time-off/tell-manager",
+        "book-time-off/tell-employee",
+        "monthly-roundup/sent"
+      ],
+      "contribution": "shared_system",
+      "receives": [
+        {
+          "what": "who to, subject and message",
+          "from_or_to": "app/leave/tasks.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "an email",
+          "from_or_to": "the mail server"
+        }
+      ],
+      "if_removed": "No emails go out at all.",
+      "evidence": [
+        {
+          "path": "app/shared/notifications.py",
+          "start_line": 8,
+          "end_line": 17
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "file": "app/shared/audit.py",
+      "role": "A permanent log of who asked for, approved or turned down what.",
+      "stages": [
+        "book-time-off/ask"
+      ],
+      "contribution": "shared_system",
+      "receives": [
+        {
+          "what": "who did what",
+          "from_or_to": "app/leave/service.py"
+        }
+      ],
+      "hands_off": [
+        {
+          "what": "a log line",
+          "from_or_to": "the database"
+        }
+      ],
+      "if_removed": "Time off still works but nobody can see who approved what.",
+      "evidence": [
+        {
+          "path": "app/shared/audit.py",
+          "start_line": 10,
+          "end_line": 21
+        }
+      ],
+      "provenance": "claude"
+    }
+  ],
+  "shared_systems": [
+    {
+      "id": "email",
+      "name": "Email",
+      "description": "Every email the app sends.",
+      "files": [
+        "app/shared/notifications.py"
+      ],
+      "used_by_stages": [
+        "book-time-off/tell-manager",
+        "book-time-off/tell-employee",
+        "monthly-roundup/sent"
+      ],
+      "evidence": [
+        {
+          "path": "app/shared/notifications.py",
+          "start_line": 8,
+          "end_line": 17,
+          "symbol": "send_email"
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "id": "who-is-asking",
+      "name": "Sign-in and job roles",
+      "description": "Who is using the app and what they may do.",
+      "files": [
+        "app/shared/auth.py"
+      ],
+      "used_by_stages": [
+        "book-time-off/manager-decides",
+        "download-spreadsheet/pick-dates"
+      ],
+      "evidence": [
+        {
+          "path": "app/shared/auth.py",
+          "start_line": 9,
+          "end_line": 25
+        }
+      ],
+      "provenance": "claude"
+    },
+    {
+      "id": "activity-log",
+      "name": "Activity log",
+      "description": "Who did what to which request.",
+      "files": [
+        "app/shared/audit.py"
+      ],
+      "used_by_stages": [
+        "book-time-off/ask"
+      ],
+      "evidence": [
+        {
+          "path": "app/shared/audit.py",
+          "start_line": 20,
+          "end_line": 21,
+          "symbol": "record"
+        }
+      ],
+      "provenance": "claude"
+    }
+  ],
+  "foundation": [
+    {
+      "group": "configuration",
+      "label": "Settings",
+      "files": [
+        "app/core/config.py"
+      ]
+    },
+    {
+      "group": "database_setup",
+      "label": "Database connection",
+      "files": [
+        "app/core/database.py"
+      ]
+    },
+    {
+      "group": "dependencies",
+      "label": "Libraries",
+      "files": [
+        "requirements.txt"
+      ]
+    },
+    {
+      "group": "secrets_loading",
+      "label": "Environment file",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "group": "wiring",
+      "label": "Start-up",
+      "files": [
+        "app/__init__.py",
+        "app/core/__init__.py",
+        "app/leave/__init__.py",
+        "app/main.py",
+        "app/reports/__init__.py",
+        "app/shared/__init__.py",
+        "app/worker.py"
+      ]
+    }
+  ],
+  "flags": [
+    {
+      "id": "carry-over",
+      "kind": "todo",
+      "message": "Unused days don't carry over into the next year yet.",
+      "target": {
+        "type": "file",
+        "id": "app/leave/balance.py"
+      },
+      "evidence": [
+        {
+          "path": "app/leave/balance.py",
+          "start_line": 10,
+          "end_line": 10,
+          "symbol": "deduct"
+        }
+      ]
+    },
+    {
+      "id": "no-cancel",
+      "kind": "missing_transition",
+      "message": "Booked time off can't be cancelled: nothing moves a request to cancelled.",
+      "target": {
+        "type": "stage",
+        "id": "book-time-off/cancel"
+      },
+      "evidence": [
+        {
+          "path": "app/leave/models.py",
+          "start_line": 21,
+          "end_line": 21,
+          "symbol": "LeaveStatus.CANCELLED"
+        }
+      ]
+    },
+    {
+      "id": "no-spreadsheet",
+      "kind": "not_implemented",
+      "message": "The spreadsheet download is a placeholder that always fails.",
+      "target": {
+        "type": "stage",
+        "id": "download-spreadsheet/build"
+      },
+      "evidence": [
+        {
+          "path": "app/reports/service.py",
+          "start_line": 28,
+          "end_line": 28,
+          "symbol": "export_csv"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": ".env.example",
+      "sha256": "93020741b8ec9f7920b6b5a34d3ea45237aaa8172d34f45d9ddf7a28130bd12d",
+      "language": "secret",
+      "loc": 3,
+      "layer": "foundation"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ba2d5fc3a0785eafed6357ceaa0a2f9160ccfbd6091e2e306dc2b9b986edfced",
+      "language": "markdown",
+      "loc": 18,
+      "layer": "ignored"
+    },
+    {
+      "path": "app/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "language": "python",
+      "loc": 0,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/core/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "language": "python",
+      "loc": 0,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/core/config.py",
+      "sha256": "bae3fdd313491b54348990153dddc5c5fdc73b5b04cedfd2e2104cd8a6bb9664",
+      "language": "python",
+      "loc": 23,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/core/database.py",
+      "sha256": "1bd0d7ee15d0fb26d8413e9fdd25514480819ec59290373dcfd46e2539583bb4",
+      "language": "python",
+      "loc": 20,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/leave/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "language": "python",
+      "loc": 0,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/leave/balance.py",
+      "sha256": "32c9c3fa55ab5e16b32fc6cc85f075781741387ceb01208fd130adb69d3efef6",
+      "language": "python",
+      "loc": 11,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/leave/models.py",
+      "sha256": "25c527e512e048f33a8159007b367774708af0c28427a1472dadffe9fe9ef5c8",
+      "language": "python",
+      "loc": 50,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/leave/routes.py",
+      "sha256": "005f47adacd279ed86f279a6ca8d0dbcf09a89d94aa7d5da2f77f7f7158cd500",
+      "language": "python",
+      "loc": 38,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/leave/schemas.py",
+      "sha256": "f812dd98377b90019e36923d607315515d2bbc56ca8d97e2cd625394863498af",
+      "language": "python",
+      "loc": 30,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/leave/service.py",
+      "sha256": "111b66bab9846faf4844bd86700547b738b5b0b9ae9f8494f9bc27e5dd32f1e9",
+      "language": "python",
+      "loc": 77,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/leave/tasks.py",
+      "sha256": "b3f36a9e4d561280b9d0c7064d5c50e0e4bf1100bd7379726b0468f39840fe35",
+      "language": "python",
+      "loc": 21,
+      "layer": "business",
+      "module": "leave"
+    },
+    {
+      "path": "app/main.py",
+      "sha256": "92d44dac5d904e9c22c89268a41eb75a2c78e91edcae382e622a698aba16751d",
+      "language": "python",
+      "loc": 21,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/reports/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "language": "python",
+      "loc": 0,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/reports/routes.py",
+      "sha256": "c72c20d41ac4b036430cb3a97645121efb2bd02139df76858bddb3fcb04a4a12",
+      "language": "python",
+      "loc": 24,
+      "layer": "business",
+      "module": "reports"
+    },
+    {
+      "path": "app/reports/service.py",
+      "sha256": "3f97bae90e48f0b99887777e29dadb419ae7db5f1a4b0c99166e5b7e1782814b",
+      "language": "python",
+      "loc": 28,
+      "layer": "business",
+      "module": "reports"
+    },
+    {
+      "path": "app/reports/tasks.py",
+      "sha256": "2684c020201cc20457a904815d6a50d48964d221f8a6e337995bfdede8d3f8fc",
+      "language": "python",
+      "loc": 17,
+      "layer": "business",
+      "module": "reports"
+    },
+    {
+      "path": "app/shared/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "language": "python",
+      "loc": 0,
+      "layer": "foundation"
+    },
+    {
+      "path": "app/shared/audit.py",
+      "sha256": "0681af473b3a179e7759284961bfccb44f9bbb98a42775a6311700d96d61be1b",
+      "language": "python",
+      "loc": 21,
+      "layer": "business"
+    },
+    {
+      "path": "app/shared/auth.py",
+      "sha256": "737d38f1f9cd954493554406536a2ad2a6e23737a0fba21e3e0794177cc54779",
+      "language": "python",
+      "loc": 25,
+      "layer": "business"
+    },
+    {
+      "path": "app/shared/notifications.py",
+      "sha256": "8c6ff4608f14d85eafa85263469f547be9321c21f71ab20523903e7177a60456",
+      "language": "python",
+      "loc": 17,
+      "layer": "business"
+    },
+    {
+      "path": "app/worker.py",
+      "sha256": "9b0a9f5565edc9428375aaade36223deccec7f6816345bae2d7363c94a371394",
+      "language": "python",
+      "loc": 13,
+      "layer": "foundation"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "18006b94e7b0328504edec4e69daf4445d85762fe72988da86016115b89f4a1f",
+      "language": "requirements",
+      "loc": 5,
+      "layer": "foundation"
+    }
+  ]
+}
