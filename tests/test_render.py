@@ -32,7 +32,7 @@ def test_golden(out, fmt):
     path = GOLDEN / f"leave-desk.atlas.{fmt}"
     if os.environ.get("UPDATE_GOLDEN"):
         path.parent.mkdir(exist_ok=True)
-        path.write_text(out[fmt], encoding="utf-8")
+        path.write_text(out[fmt], encoding="utf-8", newline="\n")
     assert out[fmt] == path.read_text(encoding="utf-8"), f"{path.name} changed; rerun with UPDATE_GOLDEN=1 if intended"
     assert out[fmt] == RENDERERS[fmt](ATLAS)  # deterministic
 
@@ -137,3 +137,12 @@ def test_cli_render(tmp_path):
     with pytest.raises(ValueError):
         cli.main(["render", "--root", str(other), "--format", "excalidraw,html"])
     assert not (other / ".atlas" / "out" / "atlas.excalidraw").exists()
+
+
+def test_trunk_has_no_more_lanes_above_than_below():
+    """Phones show the top of a plate first, so the trunk (start stage) should sit as high as the lanes allow."""
+    for w in ATLAS["workflows"]:
+        nodes = layout.plate(w, ATLAS)["nodes"]
+        trunk = next(n["cy"] for n in nodes if n["kind"] == "start")
+        rows = {n["cy"] for n in nodes}
+        assert len({r for r in rows if r < trunk}) <= len({r for r in rows if r > trunk}), w["id"]
