@@ -7,12 +7,25 @@ description: Map a codebase into an "anatomy atlas" - plain-language business wo
 
 > Where we're going, we don't need docs.
 
-**Status: milestone (a).** Only the atlas schema and a hand-written sample exist. The scanner, validator and renderers are not built yet.
+**Status: milestone (b).** The deterministic scan works. Naming stages, file cards, validation and rendering are not built yet.
 
-If invoked now, tell the user the skill is not ready to scan repositories, and point them to:
+## What works now
 
-- `schema/atlas.schema.json`: the atlas format
-- `examples/leave-desk.atlas.json` in the plugin repo: what a finished atlas looks like
-- `references/`: how stages are named, how files are classified, how plates are drawn
+1. Check `uv` is installed (`uv --version`). If not, tell the user to install it from https://docs.astral.sh/uv/ and stop.
+2. Scan the repository root (the user's path, default the current directory), using `scripts/atlas.py` from this skill's base directory:
 
-The full workflow (scan → cluster → draft → validate → checkpoint → render) lands in milestones (b) to (g); see PLAN.md section 3.
+   ```sh
+   uv run --script <skill-base-dir>/scripts/atlas.py scan <root> [--draft-limit 8]
+   ```
+
+   This writes `<root>/.atlas/scan.json` and `<root>/.atlas/.gitignore`. Nothing leaves the machine and no secret values are stored.
+3. Report the printed summary: entry points, status machines, permission branches, models, incomplete code, and modules with their role (business / shared / foundation).
+4. Tell the user the next steps (business-language stages, file cards, diagrams) arrive in later milestones; see PLAN.md section 3.
+
+## Reading scan.json
+
+- `entry_points`, `status_machines`, `permission_branches`, `models`, `incomplete`: facts with file paths and line numbers.
+- `clusters.modules`: one per top-level package or app folder, with a suggested `role`.
+- `clusters.workflows`: skeletons (entry points grouped by file, call reachability and shared status machines) to be named in business language.
+- `clusters.foundation`: plumbing files by group; `clusters.shared_candidates`: likely shared systems.
+- Framework-specific wiring (router prefixes, `Depends`, Celery tasks sent by name) is not resolved until the adapters milestone.

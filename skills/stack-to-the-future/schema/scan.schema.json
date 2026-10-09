@@ -1,0 +1,634 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/saishashank-a/stack-to-the-future/schema/scan.schema.json",
+  "title": "Stack to the Future deterministic scan",
+  "description": "Facts only, no LLM output. String literal values are never stored; every string is redacted before writing.",
+  "type": "object",
+  "required": [
+    "scan_version",
+    "root",
+    "files",
+    "external_imports",
+    "symbols",
+    "imports",
+    "calls",
+    "entry_points",
+    "status_machines",
+    "permission_branches",
+    "models",
+    "incomplete",
+    "redactions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "scan_version": {
+      "const": "0.1"
+    },
+    "root": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256",
+          "language",
+          "loc",
+          "hint"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "language": {
+            "type": "string"
+          },
+          "loc": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "parse_errors": {
+            "type": "boolean"
+          },
+          "hint": {
+            "enum": [
+              "business",
+              "foundation",
+              "ignored"
+            ]
+          },
+          "group": {
+            "enum": [
+              "configuration",
+              "database_setup",
+              "secrets_loading",
+              "dependencies",
+              "wiring",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "external_imports": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "name",
+          "kind",
+          "start_line",
+          "end_line"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "function",
+              "method",
+              "class",
+              "assignment"
+            ]
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decorators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "line",
+          "module",
+          "target"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "module": {
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "caller",
+          "line",
+          "target_file",
+          "target_symbol"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "caller": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "target_symbol": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "entry_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "file",
+          "symbol",
+          "start_line",
+          "end_line"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "api_route",
+              "ui_page",
+              "cli_command",
+              "background_job",
+              "event_handler",
+              "scheduled_job"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "router": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "status_machines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "enum",
+          "states",
+          "initial",
+          "transitions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "enum": {
+            "type": "string"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "initial": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to",
+                "file",
+                "function",
+                "line"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "to": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "permission_branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "function",
+          "line",
+          "test"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "function": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "test": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "name",
+          "kind",
+          "fields",
+          "start_line",
+          "end_line"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "orm",
+              "schema",
+              "dataclass"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "incomplete": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "kind",
+          "line",
+          "end_line"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          },
+          "kind": {
+            "enum": [
+              "stub",
+              "todo",
+              "not_implemented",
+              "missing_transition"
+            ]
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "redactions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clusters": {
+      "type": "object",
+      "required": [
+        "modules",
+        "workflows",
+        "shared_candidates",
+        "foundation",
+        "unassigned",
+        "loose_incomplete",
+        "draft_order",
+        "draft_now"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "folder",
+              "role",
+              "files",
+              "entry_points",
+              "imported_by",
+              "workflows"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "business",
+                  "shared",
+                  "foundation"
+                ]
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+                }
+              },
+              "entry_points": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "imported_by": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "workflows": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "workflows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "module",
+              "entry_points",
+              "files",
+              "symbols",
+              "status_machines",
+              "permission_branches",
+              "incomplete"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              },
+              "entry_points": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+                }
+              },
+              "symbols": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "status_machines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "permission_branches": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "incomplete": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "shared_candidates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          }
+        },
+        "foundation": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+            }
+          }
+        },
+        "unassigned": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+          }
+        },
+        "loose_incomplete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "draft_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "draft_now": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

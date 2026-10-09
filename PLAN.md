@@ -33,7 +33,7 @@ stack-to-the-future/                  # this repo = a Claude Code plugin
 ├── skills/stack-to-the-future/       # the skill itself
 │   ├── SKILL.md                      # the workflow Claude follows (section 3)
 │   ├── scripts/
-│   │   ├── atlas.py                  # single CLI entry: scan | cluster | validate | merge | render | walkthrough-context
+│   │   ├── atlas.py                  # single CLI entry: scan (incl. cluster) | validate | merge | render | walkthrough-context
 │   │   ├── scan.py                   # tree-sitter parse -> symbols, imports, calls, detections
 │   │   ├── graph.py                  # networkx import + call graph, entry-point reachability
 │   │   ├── cluster.py                # modules + workflow skeletons from graph and detections
@@ -146,7 +146,7 @@ Trigger: "map this codebase", "make an atlas", "explain this repo's workflows", 
 
 1. **Preflight.** Confirm repo root. Read `.atlas/atlas.json` if present (re-run mode). Tell the user outputs stay local in `.atlas/`.
 2. **Scan.** `uv run scripts/atlas.py scan .` → `.atlas/scan.json`. Only files whose hash changed are re-parsed. Adapters run here. Report counts: files, entry points, state machines, jobs, models, TODOs.
-3. **Cluster.** `uv run scripts/atlas.py cluster` → module and workflow skeletons (entry points + reachable files + detected status transitions), foundation files pre-sorted.
+3. **Cluster.** Runs inside `scan` (cheap and deterministic, so no separate command) → module and workflow skeletons (entry points + reachable files + detected status transitions), foundation files pre-sorted.
 4. **Draft (Claude).** Follow `templates/draft_instructions.md`. For each workflow skeleton, read the cited excerpts (`atlas.py excerpt <path> <start> <end>`, which is redacted) and write `.atlas/draft.json`: stage names in business language, variants as branches that merge, files mapped to stages with contribution type, file cards. Only touch items that are new or stale; never edit `locked` items. Large repos (more than `--draft-limit` modules, default 8): scan everything, draft the top modules ranked by entry-point count, and list the rest on the overview as *not yet drawn* (`modules[].drawn: false`); "draw the Billing module" drafts one on request. Several modules to draft: one subagent per module, each writes a module fragment, then `atlas.py merge` combines them.
 5. **Validate.** `uv run scripts/atlas.py validate .atlas/draft.json`. On failure, fix exactly the reported items and re-run. Max 3 rounds; anything still failing is dropped and turned into a flag, and the user is told.
 6. **Human checkpoint.** Render `templates/outline.md`: modules → workflows → stages (with variant branches and merges), shared systems, foundation groups, flags. Ask the user to confirm or correct. Corrections are applied with `provenance: human, locked: true`. Repeat until confirmed.
@@ -285,3 +285,10 @@ Adapters stay in (f) as listed. Consequence: the (b) scanner is framework-agnost
 | 7 | Large repos | **Scan all, draft top modules first** (default 8, ranked by entry points); rest shown as *not yet drawn*, drafted on request. |
 | 8 | Committing `.atlas/` | **Commit `atlas.json`, `out/`, `walkthroughs/`**; skill writes `.atlas/.gitignore` for `scan.json`, `draft.json`, `cache/`. |
 | 9 | Tone | **One plain-language register** for everyone, enforced by the plain-language lint. |
+
+## 11. Notes from implementation
+
+- **(b) tree-sitter is capped below 0.26.** 0.26.0 segfaults while walking some real files (reproduced on `full-stack-fastapi-template` `backend/tests/api/routes/test_users.py`, Python 3.11 and 3.13); 0.25.2 is fine. Lift the cap when a fixed release ships.
+- **(b) Workflow skeletons group entry points by file, reachability and shared status machines,** not by shared helper code; shared CRUD/dependency helpers otherwise chain every route into one skeleton on real repos.
+- **(b) Module rule on monorepos.** With `backend/` + `frontend/` at the top, each becomes one module, as decided. On the FastAPI template that makes `backend` one module with six workflow skeletons (items, login, users, ...), which the checkpoint can split.
+- **(b) SQLModel** classes count as data tables only with `table=True`; the rest are request/response shapes.

@@ -1,8 +1,4 @@
-"""The hand-written sample atlas must be valid and must tell the truth about the fixture.
-
-ponytail: stdlib `ast` stands in for the tree-sitter symbol table until milestone (c)'s validator exists.
-"""
-import ast
+"""The hand-written sample atlas must be valid and must tell the truth about the fixture."""
 import hashlib
 import json
 from collections import Counter
@@ -10,32 +6,13 @@ from pathlib import Path
 
 import jsonschema
 
+from scan import scan
+
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "leave-desk"
 ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text())
 SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "atlas.schema.json").read_text())
 FAKE_SECRETS = ["FAKE-smtp-pass-9f8a7b6c5d4e3f2a1b0c", "FAKE-db-pass-4c3b2a19"]
-
-
-def symbols(path: Path) -> dict[str, tuple[int, int]]:
-    """Qualified name -> (first line incl. decorators, last line) for defs, classes and assignments."""
-    found = {}
-
-    def walk(body, prefix):
-        for node in body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                start = min([node.lineno] + [d.lineno for d in node.decorator_list])
-                found[prefix + node.name] = (start, node.end_lineno)
-                if isinstance(node, ast.ClassDef):
-                    walk(node.body, f"{prefix}{node.name}.")
-            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                for t in targets:
-                    if isinstance(t, ast.Name):
-                        found[prefix + t.id] = (node.lineno, node.end_lineno)
-
-    walk(ast.parse(path.read_text()).body, "")
-    return found
 
 
 def evidence(node):
@@ -63,14 +40,14 @@ def test_files_match_fixture_on_disk():
 
 
 def test_every_citation_points_at_real_code():
+    table = {(s["file"], s["name"]): (s["start_line"], s["end_line"]) for s in scan(FIXTURE)["symbols"]}
     for ev in evidence(ATLAS):
         path = FIXTURE / ev["path"]
         assert path.is_file(), ev
         assert 1 <= ev["start_line"] <= ev["end_line"] <= len(path.read_text().splitlines()), ev
         if "symbol" in ev:
-            table = symbols(path)
-            assert ev["symbol"] in table, f"unknown symbol {ev}"
-            start, end = table[ev["symbol"]]
+            assert (ev["path"], ev["symbol"]) in table, f"unknown symbol {ev}"
+            start, end = table[(ev["path"], ev["symbol"])]
             assert ev["start_line"] <= end and start <= ev["end_line"], f"citation misses its symbol {ev}"
 
 
