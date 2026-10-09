@@ -328,6 +328,35 @@
                 }
               }
             }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "file",
+                "model",
+                "field",
+                "line"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*\\.\\.)[^\\\\]+$"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
           }
         }
       }

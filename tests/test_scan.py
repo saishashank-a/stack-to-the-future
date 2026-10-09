@@ -33,19 +33,26 @@ def test_matches_schema_and_is_deterministic(scan):
 def test_entry_points(scan):
     found = {(e["kind"], e["label"], e["symbol"]) for e in scan["entry_points"]}
     assert found == {
-        ("api_route", "POST /", "submit_leave"),  # router prefix /leave arrives with the FastAPI adapter (f)
-        ("api_route", "GET /mine", "my_leave"),
-        ("api_route", "POST /{request_id}/approve", "approve_leave"),
-        ("api_route", "POST /{request_id}/reject", "reject_leave"),
-        ("api_route", "POST /monthly/run", "run_monthly_summary"),
-        ("api_route", "GET /export", "export"),
+        ("api_route", "POST /leave", "submit_leave"),  # router prefixes resolved by the FastAPI adapter
+        ("api_route", "GET /leave/mine", "my_leave"),
+        ("api_route", "POST /leave/{request_id}/approve", "approve_leave"),
+        ("api_route", "POST /leave/{request_id}/reject", "reject_leave"),
+        ("api_route", "POST /reports/monthly/run", "run_monthly_summary"),
+        ("api_route", "GET /reports/export", "export"),
         ("background_job", "leave.notify_manager", "notify_manager"),
         ("background_job", "leave.notify_decision", "notify_decision"),
         ("background_job", "reports.monthly_summary", "monthly_summary"),
+        ("scheduled_job", 'reports.monthly_summary (crontab(day_of_month="1", hour="6", minute="0"))', "<module>"),
     }
-    golden = {ev["symbol"] for m in GOLDEN["modules"] for e in m["entry_points"] if e["kind"] != "scheduled_job"
-              for ev in e["evidence"] if "symbol" in ev}
-    assert golden <= {e["symbol"] for e in scan["entry_points"]}
+    # Every golden entry point, of every kind, is found: same label for routes and jobs, overlapping lines for schedules.
+    for golden in (e for m in GOLDEN["modules"] for e in m["entry_points"]):
+        if golden["kind"] == "scheduled_job":
+            ev = golden["evidence"][0]
+            assert any(e["kind"] == "scheduled_job" and e["file"] == ev["path"] and e["start_line"] <= ev["end_line"]
+                       and ev["start_line"] <= e["end_line"] and e["label"].startswith("reports.monthly_summary")
+                       for e in scan["entry_points"]), golden
+        else:
+            assert (golden["kind"], golden["label"]) in {(e["kind"], e["label"]) for e in scan["entry_points"]}, golden
 
 
 def test_status_machine(scan):
@@ -55,14 +62,21 @@ def test_status_machine(scan):
         (("PENDING",), "APPROVED", "_approve"),
         (("PENDING",), "REJECTED", "reject_by_manager"),
     }
+    assert machine["columns"] == [{"file": "app/leave/models.py", "model": "LeaveRequest", "field": "status", "line": 46}]
 
 
 def test_permission_branches(scan):
-    assert {(b["file"], b["function"]) for b in scan["permission_branches"]} == {
+    assert {(b["file"], b["function"]) for b in scan["permission_branches"] if not b["test"].startswith("Depends(")} == {
         ("app/leave/service.py", "choose_route"),
         ("app/leave/service.py", "_check_reviewer"),
         ("app/shared/auth.py", "require_manager"),
         ("app/shared/auth.py", "require_hr"),
+    }
+    # Routes guarded through Depends (FastAPI adapter), including the reports router's router-level dependency.
+    assert {(b["function"], b["test"]) for b in scan["permission_branches"] if b["test"].startswith("Depends(")} == {
+        ("submit_leave", "Depends(current_employee)"), ("my_leave", "Depends(current_employee)"),
+        ("approve_leave", "Depends(require_manager)"), ("reject_leave", "Depends(require_manager)"),
+        ("run_monthly_summary", "Depends(require_hr)"), ("export", "Depends(require_hr)"),
     }
 
 
@@ -112,6 +126,9 @@ def test_clusters_agree_with_golden(scan):
     (time_off,) = [w for w in c["workflows"] if "LeaveStatus" in w["status_machines"]]
     assert {"app/leave/routes.py::submit_leave", "app/leave/routes.py::approve_leave",
             "app/leave/routes.py::reject_leave"} <= set(time_off["entry_points"])
+    # Celery send_task("reports.monthly_summary") links the manual trigger to the monthly job: one skeleton.
+    (summary,) = [w for w in c["workflows"] if "app/reports/tasks.py::monthly_summary" in w["entry_points"]]
+    assert "app/reports/routes.py::run_monthly_summary" in summary["entry_points"]
     assert c["draft_order"] == ["leave", "reports"] and not c["unassigned"]
 
 

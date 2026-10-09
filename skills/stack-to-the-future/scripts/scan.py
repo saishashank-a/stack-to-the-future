@@ -16,6 +16,7 @@ from pathlib import Path
 import tree_sitter_python
 from tree_sitter import Language, Parser
 
+import adapters
 import graph
 from redact import is_secret_file, redact_obj
 
@@ -206,8 +207,9 @@ def descendants(node):
 # ---------------------------------------------------------------- cross-file resolution
 
 class Project:
-    def __init__(self, facts: dict[str, dict]):
-        self.facts = facts
+    def __init__(self, facts: dict[str, dict], root: Path | None = None, paths: list[str] = ()):
+        self.facts, self.root, self.paths = facts, root, list(paths)
+        self.entry_points: list[dict] = []
         self.symbols = {p: {s["name"]: s for s in f["symbols"]} for p, f in facts.items()}
         self.full, suffix = {}, {}
         for path in facts:
@@ -220,6 +222,12 @@ class Project:
                 suffix.setdefault(".".join(parts[i:]), set()).add(path)
         self.suffix = {k: next(iter(v)) for k, v in suffix.items() if len(v) == 1}
         self.bindings = {p: self._bindings(p) for p in facts}
+
+    def uses(self, package: str) -> bool:
+        return any(not i["level"] and i["module"].split(".")[0] == package for f in self.facts.values() for i in f["imports"])
+
+    def source(self, path: str) -> bytes:
+        return (self.root / path).read_bytes()
 
     def module_file(self, dotted: str) -> str | None:
         if not dotted or ("." not in dotted and dotted in sys.stdlib_module_names):
@@ -295,8 +303,15 @@ def scan(root: str | Path) -> dict:
             entry["parse_errors"] = facts[path].pop("parse_errors")
         files.append(entry)
 
-    project = Project(facts)
-    calls = []
+    project = Project(facts, root, [e["path"] for e in files])
+    project.entry_points = entry_points(project)
+    extra = adapters.run(project)
+    for e in extra["entry_points"]:
+        if all(e["id"] != x["id"] for x in project.entry_points):
+            project.entry_points.append(e)
+    for e in project.entry_points:
+        e.update(extra["relabel"].get(e["id"], {}))
+    calls = list(extra["calls"])
     for path, f in facts.items():
         for c in f["calls"]:
             target = project.resolve(path, c["callee"], c["caller"])
@@ -307,6 +322,11 @@ def scan(root: str | Path) -> dict:
     symbols = [{"file": p, **s} for p, f in facts.items() for s in f["symbols"]]
     enums = enum_classes(project)
     machines = status_machines(project, enums, calls_g)
+    for m in machines:
+        columns = [{k: c[k] for k in ("file", "model", "field", "line")} for c in extra["status_columns"]
+                   if (c["enum_file"], c["enum"]) == (m["file"], m["enum"])]
+        if columns:
+            m["columns"] = columns
     incomplete = [{"file": p, **i} for p, f in facts.items() for i in f["incomplete"]]
     for m in machines:
         for state in m["missing"]:
@@ -318,7 +338,7 @@ def scan(root: str | Path) -> dict:
     result = {
         "scan_version": SCAN_VERSION,
         "root": root.name,
-        "files": [dict(e, **hint(e, facts.get(e["path"]))) for e in files],
+        "files": [dict(e, **(extra["hints"].get(e["path"]) or hint(e, facts.get(e["path"])))) for e in files],
         "external_imports": sorted({i["module"].split(".")[0] for p, f in facts.items() for i in f["imports"]
                                     if not i["level"] and i["module"] and not project.module_file(i["module"])}
                                    - sys.stdlib_module_names),
@@ -326,10 +346,12 @@ def scan(root: str | Path) -> dict:
         "imports": sorted(({"file": p, "line": i["line"], "module": "." * i["level"] + i["module"],
                             "target": import_target(project, p, i)} for p, f in facts.items() for i in f["imports"]),
                           key=lambda i: (i["file"], i["line"], i["module"])),
-        "calls": sorted(calls, key=lambda c: (c["file"], c["line"], c["target_file"], c["target_symbol"])),
-        "entry_points": entry_points(project),
+        "calls": sorted({tuple(sorted(c.items())): c for c in calls}.values(),
+                        key=lambda c: (c["file"], c["line"], c["caller"], c["target_file"], c["target_symbol"])),
+        "entry_points": sorted(project.entry_points, key=lambda e: (e["file"], e["start_line"], e["id"])),
         "status_machines": [{k: v for k, v in m.items() if k != "missing"} for m in machines],
-        "permission_branches": [{"file": p, **b} for p, f in facts.items() for b in f["permission_branches"]],
+        "permission_branches": sorted([{"file": p, **b} for p, f in facts.items() for b in f["permission_branches"]]
+                                      + extra["permission_branches"], key=lambda b: (b["file"], b["line"], b["test"])),
         "models": models(project),
         "incomplete": sorted(incomplete, key=lambda i: (i["file"], i["line"])),
     }
