@@ -24,13 +24,15 @@ The skill runs inside Claude Code, so the "LLM step" is Claude itself reading `s
 ## 1. Skill folder layout
 
 ```
-stack-to-the-future/                  # this repo = a Claude Code plugin
+stack-to-the-future/                  # this repo = a single-plugin marketplace
 ├── .claude-plugin/
-│   ├── plugin.json                   # plugin manifest (name, version, description, author)
-│   └── marketplace.json              # single-plugin marketplace so `/plugin install` works from this repo
-├── commands/
-│   └── stack-to-the-future.md        # /stack-to-the-future slash command, hands off to the skill
-├── skills/stack-to-the-future/       # the skill itself
+│   └── marketplace.json              # points at ./plugin so `claude plugin install` works from this repo
+├── plugin/                           # the installed plugin; only this folder ships to users
+│   ├── .claude-plugin/plugin.json    # plugin manifest (name, version, description, author)
+│   ├── README.md, LICENSE
+│   └── commands/
+│       └── stack-to-the-future.md    # /stack-to-the-future slash command, hands off to the skill
+├── plugin/skills/stack-to-the-future/ # the skill itself
 │   ├── SKILL.md                      # the workflow Claude follows (section 3)
 │   ├── scripts/
 │   │   ├── atlas.py                  # single CLI entry: scan (incl. cluster) | validate | merge | render | walkthrough-context
@@ -124,7 +126,7 @@ IDs are stable slugs (`leave-requests/manager-review`), file IDs are repo-relati
 
 ### 2.2 JSON Schema (draft 2020-12)
 
-The schema lives in [`skills/stack-to-the-future/schema/atlas.schema.json`](skills/stack-to-the-future/schema/atlas.schema.json), which is the source of truth. It was moved out of this plan in milestone (a) so the two can't drift apart.
+The schema lives in [`plugin/skills/stack-to-the-future/schema/atlas.schema.json`](plugin/skills/stack-to-the-future/schema/atlas.schema.json), which is the source of truth. It was moved out of this plan in milestone (a) so the two can't drift apart.
 
 ### 2.3 Validator rules (beyond the schema)
 

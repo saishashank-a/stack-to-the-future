@@ -15,7 +15,7 @@ Status: all seven planned milestones are built. Next up: real-world testing.
 
 ## See a sample
 
-Open [`examples/out/leave-desk.atlas.html`](examples/out/leave-desk.atlas.html) in a browser (works offline). It is the atlas of [`fixtures/leave-desk`](fixtures/leave-desk), a small time-off app built for testing: three approval routes branching and merging on one diagram, two modules, shared systems, the faded foundation layer and dotted unfinished work. The same atlas is also exported as [Excalidraw](examples/out/leave-desk.atlas.excalidraw) and [`.lal`](examples/out/leave-desk.atlas.lal) ([format](skills/stack-to-the-future/references/lal-format.md)).
+Open [`examples/out/leave-desk.atlas.html`](examples/out/leave-desk.atlas.html) in a browser (works offline). It is the atlas of [`fixtures/leave-desk`](fixtures/leave-desk), a small time-off app built for testing: three approval routes branching and merging on one diagram, two modules, shared systems, the faded foundation layer and dotted unfinished work. The same atlas is also exported as [Excalidraw](examples/out/leave-desk.atlas.excalidraw) and [`.lal`](examples/out/leave-desk.atlas.lal) ([format](plugin/skills/stack-to-the-future/references/lal-format.md)).
 
 ## Install
 

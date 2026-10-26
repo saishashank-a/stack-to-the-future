@@ -6,5 +6,6 @@
   "homepage": "https://github.com/saishashank-a/stack-to-the-future",
   "repository": "https://github.com/saishashank-a/stack-to-the-future",
   "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/saishashank-a/stack-to-the-future/blob/main/plugin/README.md#privacy",
   "keywords": ["documentation", "architecture", "diagrams", "onboarding"]
 }

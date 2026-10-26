@@ -17,7 +17,7 @@ from render import excalidraw, html, lal, layout
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = json.loads((ROOT / "examples" / "leave-desk.atlas.json").read_text(encoding="utf-8"))
 GOLDEN = ROOT / "examples" / "out"
-LAL_SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "lal.schema.json").read_text(encoding="utf-8"))
+LAL_SCHEMA = json.loads((ROOT / "plugin" / "skills" / "stack-to-the-future" / "schema" / "lal.schema.json").read_text(encoding="utf-8"))
 RENDERERS = {"html": html.render, "excalidraw": excalidraw.render, "lal": lal.render}
 CANCEL = "request-time-off/employee-cancels"
 

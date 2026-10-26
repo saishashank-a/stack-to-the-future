@@ -7,7 +7,7 @@ import jsonschema
 from scan import scan
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = json.loads((ROOT / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text(encoding="utf-8"))
+SCHEMA = json.loads((ROOT / "plugin" / "skills" / "stack-to-the-future" / "schema" / "scan.schema.json").read_text(encoding="utf-8"))
 
 
 def repo(tmp_path, files: dict[str, str]) -> dict:

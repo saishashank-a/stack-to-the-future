@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "stack-to-the-future",
-      "source": "./",
+      "source": "./plugin",
       "description": "Turn any codebase into an anatomy atlas of business workflows."
     }
   ]
