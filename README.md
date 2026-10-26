@@ -20,8 +20,8 @@ Open [`examples/out/leave-desk.atlas.html`](examples/out/leave-desk.atlas.html) 
 ## Install
 
 ```
-/plugin marketplace add saishashank-a/stack-to-the-future
-/plugin install stack-to-the-future
+claude plugin marketplace add saishashank-a/stack-to-the-future
+claude plugin install stack-to-the-future@stack-to-the-future
 ```
 
 Requires [uv](https://docs.astral.sh/uv/). Then ask Claude to "map this codebase" or run `/stack-to-the-future`.
