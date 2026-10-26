@@ -1,0 +1,15 @@
+# SkillSpector suppressions. Every rule was reviewed against the source; see reasons.
+# Do not widen anything under skills/ without the same review. See docs/SUPPRESSION.md
+# in github.com/NVIDIA/skillspector.
+version: 2
+scanner_version: "2.12.0"
+rules:
+  - path: "fixtures/**"
+    reason: "Test input apps the scanner parses, never installed or executed (localhost fetch, pinned deps, settings files are deliberate)"
+  - path: "tests/**"
+    reason: "Unit tests use secret-looking file names (.env, secrets.yaml) as inputs to prove the redactor scrubs them"
+  - id: "PE3"
+    path: "skills/stack-to-the-future/scripts/redact.py"
+    message: "*Credential Access*"
+    reason: "SECRET_FILES lists file names the redactor SCRUBS; it never reads credentials out of them"
+fingerprints: []
