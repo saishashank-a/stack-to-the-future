@@ -1,6 +1,6 @@
 {
   "name": "stack-to-the-future",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scans a codebase and draws an anatomy atlas: business workflow diagrams with the code as labels. Where we're going, we don't need docs.",
   "author": { "name": "Sai Shashank Anchuri", "email": "shashankanchuri@gmail.com" },
   "homepage": "https://github.com/saishashank-a/stack-to-the-future",
